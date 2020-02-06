@@ -1,0 +1,67 @@
+v3ppia---
+123456789
+
+1. Word Type [MANDATORY]:
+"v": 3728, VERB (werkwoord)
+"d": 2494, ADVERB (bijwoord)
+"p": 1129,  PRONOUN (voornaamwoord)
+"l": 2396, DETERMINATE ARTICLE (bepaald lidwoord)
+"n": 4547, NOUN (zelfstandig naamwoord)
+"u": 2360, PUNCTUATION (interpunctie)
+"a": 1821, ADJECTIVE (bijvoegelijk naamwoord)
+"c": 1003, (voegwoord)
+"r": 1441, APPOSITION (bijstelling)
+"i": 35, (uitroep)
+"m": 4, NUMERICAL (telwoord)
+"x": 1, IRREGULAR (onvervoegbaar)
+
+2. Person [OPTIONAL]:
+"1": First person, (1ste persoon)
+"2": Second person, (2e persoon)
+"3": Third person, (3e persoon)
+
+3. Number [OPTIONAL]:
+"p": Plural, (meervoud)
+"s": Singular, (enkelvoud)
+"d": Dual, (tweevoud)   
+
+4. Tense [OPTIONAL]:
+"p": Praesens, (tegenwoordige tijd)
+"a": Aoristus, (verleden tijd)
+"r": Perfectum, (voltooid tegenwoordige tijd)
+"i": Imperfectum, (onvoltooid verleden tijd)
+"f": Futurum, (toekomstige tijd)
+"l": Plusquamperfectum (voltooid verleden tijd)
+"t": Futurum? (voltooid toekomstige tijd)
+
+5. Mode [OPTIONAL]:
+"i": Indicativus, (aantonende wijs)
+"p": Participium, (deelwoord)
+"n": Infinitivus, (onbepaalde wijs)
+"s": Coniunctivus, (aanvoegende wijs)
+"o": Optativus, (wensende wijs)
+"m": Imperativus (gebiedende wijs)
+"g": Gerundium (verbaal substantief)
+
+6. Voice [OPTIONAL]:
+"a": Active, (actief)
+"p": Passive, (passief)
+"m": Medium, (bestaat niet in NL)
+"e": Medium Tantum (wederom, bestaat niet in NL)
+
+7. Gender [OPTIONAL]:
+"m": Masculinum, (mannelijk)
+"f": Femininum, (vrouwelijk)
+"n": Neutrum, (onzijdig)
+
+8. Case [OPTIONAL]:
+"n": Nominativus, (onderwerp)
+"a": Accusativus, (lijdend voorwerp)
+"d": Dativus, (meewerkend voorwerp)
+"g": Genitivus, (bezitsrelatie)
+"v": Vocativus, (aanroepend voorwerp? xD)
+"l": Locativus, (plaatsbepaling)
+
+9. Degree of comparison [OPTIONAL]:
+"c": Comparativus, (vergelijkende trap)
+"s": Superlativus, (overtreffende trap)
