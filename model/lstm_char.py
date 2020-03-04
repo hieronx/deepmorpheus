@@ -4,18 +4,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.autograd as autograd
 
+# Source: https://github.com/sherif7810/lstm_pos_tagger/blob/master/main.py
 class LSTMCharTagger(nn.Module):
     """LSTM part-os-speech (PoS) tagger."""
 
-    def __init__(self, word_embedding_dim, char_embedding_dim, char_repr_dim, hidden_dim, vocab_size, chars_size, tagset_size, word_to_ix, char_to_ix, make_ixs):
+    def __init__(self, word_embedding_dim, char_embedding_dim, char_repr_dim, hidden_dim, vocab_size, chars_size, tagset_size):
         super(LSTMCharTagger, self).__init__()
         self.char_repr_dim = char_repr_dim
         self.hidden_dim = hidden_dim
         
-        self.word_to_ix = word_to_ix
-        self.char_to_ix = char_to_ix
-        self.make_ixs = make_ixs
-
         self.word_embeddings = nn.Embedding(vocab_size, word_embedding_dim)
         self.char_embeddings = nn.Embedding(chars_size, char_embedding_dim)
 
@@ -39,13 +36,8 @@ class LSTMCharTagger(nn.Module):
         self.char_lstm_hidden = (torch.zeros(1, 1, self.char_repr_dim),
                                  torch.zeros(1, 1, self.char_repr_dim))
 
-    def forward(self, sentence):
+    def forward(self, sentence, word_characters_ixs):
         sentence_length = len(sentence)
-        word_characters_ixs = {}
-        for word in sentence:
-            word_ix = torch.tensor([self.word_to_ix[word]])
-            char_ixs = self.make_ixs(word, self.char_to_ix)
-            word_characters_ixs[word_ix] = char_ixs
 
         word_embeds = []
         for word_ix, char_ixs in word_characters_ixs.items():
