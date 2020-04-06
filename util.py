@@ -2,6 +2,7 @@ import torch
 
 
 def parse_into_list(body):
+    """Turns the body of text into a list of tuples of the word and their respective tag"""
     data = []
     for sentence in body:
         sentence_words = []
