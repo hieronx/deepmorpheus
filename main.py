@@ -17,6 +17,8 @@ WORD_EMBEDDING_DIM = 5
 CHAR_EMBEDDING_DIM = 6
 CHAR_REPR_DIM = 3
 HIDDEN_DIM = 6
+BATCH_SIZE = 1
+NUM_EPOCHS = 20
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -58,6 +60,7 @@ def train():
         len(word_to_ix),
         len(char_to_ix),
         len(tag_to_ix),
+        BATCH_SIZE,
         device,
     )
 
@@ -65,20 +68,21 @@ def train():
     loss_function = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    bs = 32
     train_loader = torch.utils.data.DataLoader(
-        train, batch_size=bs, shuffle=True, num_workers=0
+        train, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
     )
     val_loader = torch.utils.data.DataLoader(
-        val, batch_size=bs, shuffle=True, num_workers=0
+        val, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
     )
     train_losses = []
 
-    for epoch in range(20):
+    for epoch in range(NUM_EPOCHS):
         total_loss = 0
 
         model.train()
-        for i, data in tqdm(enumerate(train_loader), total=len(train) / bs):
+        for i, data in tqdm(
+            enumerate(train_loader), total=len(train) / BATCH_SIZE, desc="Training..."
+        ):
             for i in range(len(data[0])):
                 sentence = data[0][i]
                 tags = data[1][i]
@@ -108,7 +112,7 @@ def train():
 
         epoch_loss = total_loss / len(train)
 
-        print("Epoch %d: %.4f" % (epoch, total_loss / len(train)))
+        print("Epoch %d, training loss = %.4f" % (epoch + 1, total_loss / len(train)))
         train_losses.append(total_loss / len(train))
 
         # Evaluate on validation dataset
@@ -117,7 +121,9 @@ def train():
         correct = 0
         total = 0
 
-        for i, data in tqdm(enumerate(train_loader), total=len(train) / bs):
+        for i, data in tqdm(
+            enumerate(train_loader), total=len(train) / BATCH_SIZE, desc="Evaluating..."
+        ):
             model.zero_grad()
 
             for i in range(len(data[0])):
@@ -147,9 +153,10 @@ def train():
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
 
-        print()
-        print((100.0 * correct / total))
-        print()
+        print(
+            "Epoch %d, validation accuracy = %.2f%%"
+            % (epoch + 1, 100.0 * correct / total)
+        )
 
         with open("model-%d.pickle" % time.time(), "wb") as f:
             pickle.dump(model, f)

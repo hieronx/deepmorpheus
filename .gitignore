@@ -3,3 +3,4 @@ data/perseus-conllu/*
 data/maxent_treebank_pos_tagger/*
 .ipynb_checkpoints
 __pycache__
+model*.pickle

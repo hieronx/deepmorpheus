@@ -17,6 +17,7 @@ class LSTMCharTagger(nn.Module):
         word_dict_size,
         char_dict_size,
         tagset_size,
+        bs,
         device,
     ):
         """
@@ -27,6 +28,7 @@ class LSTMCharTagger(nn.Module):
         word_dict_size: # of total words
         char_size: # of total characters
         tagset_size: # of output labels
+        bs: batch size
         device: CPU or GPU device
         """
 
@@ -45,6 +47,7 @@ class LSTMCharTagger(nn.Module):
         self.hidden2tag = nn.Linear(word_lstm_hidden_dim, tagset_size)
 
         self.device = device
+        self.bs = bs
 
         self.init_char_hidden()
         self.init_word_hidden()
