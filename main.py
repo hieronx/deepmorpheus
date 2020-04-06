@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils
-import torch.utils.data
 import torch.autograd as autograd
 from tqdm import tqdm
 import pickle, time
@@ -14,11 +13,11 @@ from dataset import PerseusCoNLLUDataset
 
 torch.manual_seed(1)
 
-WORD_EMBEDDING_DIM = 5
-CHAR_EMBEDDING_DIM = 6
-CHAR_REPR_DIM = 3
-HIDDEN_DIM = 6
-BATCH_SIZE = 32
+WORD_EMBEDDING_DIM = 10
+CHAR_EMBEDDING_DIM = 5
+HIDDEN_DIM = 100
+CHAR_REPR_DIM = 50
+BATCH_SIZE = 1
 NUM_EPOCHS = 20
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -26,14 +25,10 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train():
     # Read input
-    train_file = pyconll.load_from_file(
+    train = PerseusCoNLLUDataset(pyconll.load_from_file(
         "data/perseus-conllu/grc_perseus-ud-train.conllu"
-    )
-    val_file = pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu")
-
-    train = PerseusCoNLLUDataset(train_file)
-    val = PerseusCoNLLUDataset(val_file)
-
+    ))
+    val = PerseusCoNLLUDataset(pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu"))
     word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
 
     # Initialize model
@@ -53,21 +48,14 @@ def train():
     loss_function = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    train_loader = torch.utils.data.DataLoader(
-        train, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
-    )
-    val_loader = torch.utils.data.DataLoader(
-        val, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
-    )
     train_losses = []
 
     for epoch in range(NUM_EPOCHS):
-        total_loss = 0
+        train_loss = 0
+        correct = 0
+        total = 0
 
         model.train()
-        # for _, data in tqdm(
-        #     enumerate(train_loader), total=len(train) / BATCH_SIZE, desc="Training..."
-        # ):
         for words, tags in tqdm(train, desc='Training...'):
             word_characters_ixs = {}
             for word in words:
@@ -90,12 +78,16 @@ def train():
             loss.backward()  # calculate gradients
             optimizer.step()  # update hidden layers based on gradients
 
-            total_loss += loss
+            train_loss += loss
+            _, predicted = tag_scores.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
 
-        epoch_loss = total_loss / len(train)
+        epoch_loss = train_loss / len(train)
+        train_accuracy = 100.0 * correct / total
 
-        print("Epoch %d, training loss = %.4f" % (epoch + 1, total_loss / len(train)))
-        train_losses.append(total_loss / len(train))
+        print("Epoch %d, training loss = %.4f, training accuracy = %.2f%%" % (epoch + 1, train_loss / len(train), train_accuracy))
+        train_losses.append(train_loss / len(train))
 
         # Evaluate on validation dataset
         model.eval()
@@ -103,9 +95,6 @@ def train():
         correct = 0
         total = 0
 
-        # for _, data in tqdm(
-        #     enumerate(train_loader), total=len(train) / BATCH_SIZE, desc="Evaluating..."
-        # ):
         for words, tags in tqdm(val, desc='Evaluating...'):
             word_characters_ixs = {}
             for word in words:
@@ -130,10 +119,9 @@ def train():
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-        print(
-            "Epoch %d, validation accuracy = %.2f%%"
-            % (epoch + 1, 100.0 * correct / total)
-        )
+        val_accuracy = 100.0 * correct / total
+
+        print("Epoch %d, validation accuracy = %.2f%%" % (epoch + 1, val_accuracy))
 
         with open("model-%d.pickle" % time.time(), "wb") as f:
             pickle.dump(model, f)
