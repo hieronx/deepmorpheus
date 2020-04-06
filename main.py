@@ -13,10 +13,10 @@ from dataset import PerseusCoNLLUDataset
 
 torch.manual_seed(1)
 
-WORD_EMBEDDING_DIM = 10
-CHAR_EMBEDDING_DIM = 5
-HIDDEN_DIM = 100
-CHAR_REPR_DIM = 50
+WORD_EMBEDDING_DIM = 100
+CHAR_EMBEDDING_DIM = 20
+HIDDEN_DIM = 500
+CHAR_REPR_DIM = 200
 BATCH_SIZE = 1
 NUM_EPOCHS = 20
 
@@ -123,7 +123,7 @@ def train():
 
         print("Epoch %d, validation accuracy = %.2f%%" % (epoch + 1, val_accuracy))
 
-        with open("model-%d.pickle" % time.time(), "wb") as f:
+        with open("model.pickle", "wb") as f:
             pickle.dump(model, f)
 
 

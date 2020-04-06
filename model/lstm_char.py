@@ -5,6 +5,10 @@ import torch.optim as optim
 import torch.autograd as autograd
 
 # Source: https://github.com/sherif7810/lstm_pos_tagger/blob/master/main.py
+
+# Inspiration for minibatches: 
+# - https://towardsdatascience.com/taming-lstms-variable-sized-mini-batches-and-why-pytorch-is-good-for-your-health-61d35642972e
+# - https://gist.github.com/williamFalcon/f27c7b90e34b4ba88ced042d9ef33edd
 class LSTMCharTagger(nn.Module):
     """LSTM part-os-speech (PoS) tagger."""
 
