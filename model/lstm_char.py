@@ -76,7 +76,7 @@ class LSTMCharTagger(nn.Module):
         )  # this is only the # of unique words in the sentence, because of the way word_character_ixs is constructed
 
         word_repr = []
-        for word_ix, char_ixs in word_characters_ixs.items():
+        for word_ix, char_ixs in word_characters_ixs:
             word_embed = self.word_embeddings(word_ix.to(self.device))
 
             # TODO: what happens if we remove this?

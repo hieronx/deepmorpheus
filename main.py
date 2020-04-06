@@ -1,131 +1,40 @@
-import pyconll
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils
 import torch.autograd as autograd
-from tqdm import tqdm
-import pickle, time
+import pickle
+import pyconll
 
-from model.lstm_char import LSTMCharTagger
-from util import make_ixs
 from dataset import PerseusCoNLLUDataset
+from util import make_ixs
 
-torch.manual_seed(1)
+model = pickle.load(open("data/model.p", "rb"))
+device = "cpu"
 
-WORD_EMBEDDING_DIM = 100
-CHAR_EMBEDDING_DIM = 20
-HIDDEN_DIM = 500
-CHAR_REPR_DIM = 200
-BATCH_SIZE = 1
-NUM_EPOCHS = 20
+train = PerseusCoNLLUDataset(pyconll.load_from_file(
+    "data/perseus-conllu/grc_perseus-ud-train.conllu"
+))
+val = PerseusCoNLLUDataset(pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu"))
+word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+ix_to_tag = {v: k for k, v in tag_to_ix.items()}
 
+sentence = val[0][0]
+targets = val[0][1]
 
-def train():
-    # Read input
-    train = PerseusCoNLLUDataset(pyconll.load_from_file(
-        "data/perseus-conllu/grc_perseus-ud-train.conllu"
-    ))
-    val = PerseusCoNLLUDataset(pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu"))
-    word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
+with torch.no_grad():
+    word_characters_ixs = []
+    for word in sentence:
+        word_ix = torch.tensor([word_to_ix[word]]) if word in word_to_ix else torch.tensor([word_to_ix['<UNK>']])
+        char_ixs = make_ixs(word, char_to_ix, device)
+        word_characters_ixs.append((word_ix, char_ixs))
 
-    # Initialize model
-    model = LSTMCharTagger(
-        WORD_EMBEDDING_DIM,
-        CHAR_EMBEDDING_DIM,
-        CHAR_REPR_DIM,
-        HIDDEN_DIM,
-        len(word_to_ix),
-        len(char_to_ix),
-        len(tag_to_ix),
-        1,
-        device,
-    )
+    inputs = make_ixs(sentence, word_to_ix, device)
+    token_scores = model(word_characters_ixs)
+    scores = [score.tolist() for score in token_scores]
+    tag_ix = [score.index(max(score)) for score in scores]
+    tags = [ix_to_tag[tag] if tag in ix_to_tag else '' for tag in tag_ix]
 
-    model.to(device)
-    loss_function = nn.NLLLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-    train_losses = []
-
-    for epoch in range(NUM_EPOCHS):
-        train_loss = 0
-        correct = 0
-        total = 0
-
-        model.train()
-        for words, tags in tqdm(train, desc='Training...'):
-            word_characters_ixs = {}
-            for word in words:
-                word_ix = (
-                    torch.tensor([word_to_ix[word]]).to(device)
-                    if word in word_to_ix
-                    else torch.tensor([word_to_ix["<UNK>"]]).to(device)
-                )
-                char_ixs = make_ixs(word, char_to_ix, device)
-                word_characters_ixs[word_ix] = char_ixs
-
-            targets = make_ixs(tags, tag_to_ix, device)
-
-            model.zero_grad()
-
-            model.init_word_hidden()
-            tag_scores = model(word_characters_ixs)
-
-            loss = loss_function(tag_scores, targets)
-            loss.backward()  # calculate gradients
-            optimizer.step()  # update hidden layers based on gradients
-
-            train_loss += loss
-            _, predicted = tag_scores.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-        epoch_loss = train_loss / len(train)
-        train_accuracy = 100.0 * correct / total
-
-        print("Epoch %d, training loss = %.4f, training accuracy = %.2f%%" % (epoch + 1, train_loss / len(train), train_accuracy))
-        train_losses.append(train_loss / len(train))
-
-        # Evaluate on validation dataset
-        model.eval()
-        val_loss = 0
-        correct = 0
-        total = 0
-
-        for words, tags in tqdm(val, desc='Evaluating...'):
-            word_characters_ixs = {}
-            for word in words:
-                word_ix = (
-                    torch.tensor([word_to_ix[word]]).to(device)
-                    if word in word_to_ix
-                    else torch.tensor([word_to_ix["<UNK>"]]).to(device)
-                )
-                char_ixs = make_ixs(word, char_to_ix, device)
-                word_characters_ixs[word_ix] = char_ixs
-
-            targets = make_ixs(tags, tag_to_ix, device)
-
-            model.zero_grad()
-
-            model.init_word_hidden()
-            tag_scores = model(word_characters_ixs)
-            loss = loss_function(tag_scores, targets)
-
-            val_loss += loss.item()
-            _, predicted = tag_scores.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-        val_accuracy = 100.0 * correct / total
-
-        print("Epoch %d, validation accuracy = %.2f%%" % (epoch + 1, val_accuracy))
-
-        with open("model.pickle", "wb") as f:
-            pickle.dump(model, f)
-
-
-if __name__ == "__main__":
-    train()
+    for i, (word, tag) in enumerate(zip(sentence, tags)):
+        print('%s = %s (should be %s)' % (word, tag, targets[i]))
