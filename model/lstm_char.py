@@ -43,12 +43,13 @@ class LSTMCharTagger(nn.Module):
         self.word_embeddings = nn.Embedding(word_dict_size, word_embedding_dim)
         self.char_embeddings = nn.Embedding(char_dict_size, char_embedding_dim)
 
-        self.char_lstm = nn.LSTM(char_embedding_dim, char_lstm_hidden_dim)
+        self.directions = 1
+        self.char_lstm = nn.LSTM(char_embedding_dim, char_lstm_hidden_dim, bidirectional=self.directions > 1)
         self.word_lstm = nn.LSTM(
-            word_embedding_dim + char_lstm_hidden_dim, word_lstm_hidden_dim
+            word_embedding_dim + char_lstm_hidden_dim * self.directions, word_lstm_hidden_dim, bidirectional=self.directions > 1
         )
 
-        self.hidden2tag = nn.Linear(word_lstm_hidden_dim, tagset_size)
+        self.hidden2tag = nn.Linear(word_lstm_hidden_dim * self.directions, tagset_size)
 
         self.device = device
         self.bs = bs
@@ -71,9 +72,8 @@ class LSTMCharTagger(nn.Module):
         )
 
     def forward(self, word_characters_ixs):
-        sentence_length = len(
-            word_characters_ixs
-        )  # this is only the # of unique words in the sentence, because of the way word_character_ixs is constructed
+        # this is only the # of unique words in the sentence, because of the way word_character_ixs is constructed
+        sentence_length = len(word_characters_ixs)
 
         word_repr = []
         for word_ix, char_ixs in word_characters_ixs:
@@ -87,7 +87,7 @@ class LSTMCharTagger(nn.Module):
             for char_ix in char_ixs:
                 char_embed = self.char_embeddings(char_ix)
                 chars_repr, self.char_lstm_hidden = self.char_lstm(
-                    char_embed.view(1, 1, -1), self.char_lstm_hidden
+                    char_embed.view(self.directions, self.bs, -1), self.char_lstm_hidden
                 )
 
             word_repr.append(word_embed)
@@ -97,7 +97,7 @@ class LSTMCharTagger(nn.Module):
 
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
-            word_repr.view(sentence_length, 1, -1),
+            word_repr.view(sentence_length, self.bs, -1),
             self.word_lstm_hidden,
         )
 

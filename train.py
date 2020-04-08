@@ -14,10 +14,10 @@ from dataset import PerseusDataset
 torch.manual_seed(1)
 
 args = Namespace(
-    word_embedding_dim=10,
-    char_embedding_dim=5,
-    word_hidden_dim=100,
-    char_hidden_dim=50,
+    word_embedding_dim=100,
+    char_embedding_dim=20,
+    word_hidden_dim=500,
+    char_hidden_dim=200,
     batch_size=1,
     num_epochs=20,
 )
