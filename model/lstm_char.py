@@ -6,7 +6,7 @@ import torch.autograd as autograd
 
 # Source: https://github.com/sherif7810/lstm_pos_tagger/blob/master/main.py
 
-# Inspiration for minibatches: 
+# Inspiration for minibatches:
 # - https://towardsdatascience.com/taming-lstms-variable-sized-mini-batches-and-why-pytorch-is-good-for-your-health-61d35642972e
 # - https://gist.github.com/williamFalcon/f27c7b90e34b4ba88ced042d9ef33edd
 class LSTMCharTagger(nn.Module):
@@ -40,13 +40,22 @@ class LSTMCharTagger(nn.Module):
         self.char_lstm_hidden_dim = char_lstm_hidden_dim
         self.word_lstm_hidden_dim = word_lstm_hidden_dim
 
+        self.char_embedding_dim = char_embedding_dim
+        self.word_embedding_dim = word_embedding_dim
+
         self.word_embeddings = nn.Embedding(word_dict_size, word_embedding_dim)
         self.char_embeddings = nn.Embedding(char_dict_size, char_embedding_dim)
 
-        self.directions = 1
-        self.char_lstm = nn.LSTM(char_embedding_dim, char_lstm_hidden_dim, bidirectional=self.directions > 1)
+        self.directions = 2
+        self.char_lstm = nn.LSTM(
+            char_embedding_dim,
+            char_lstm_hidden_dim,
+            bidirectional=self.directions > 1
+        )
         self.word_lstm = nn.LSTM(
-            word_embedding_dim + char_lstm_hidden_dim * self.directions, word_lstm_hidden_dim, bidirectional=self.directions > 1
+            word_embedding_dim + char_lstm_hidden_dim * self.directions,
+            word_lstm_hidden_dim,
+            bidirectional=self.directions > 1,
         )
 
         self.hidden2tag = nn.Linear(word_lstm_hidden_dim * self.directions, tagset_size)
@@ -57,18 +66,18 @@ class LSTMCharTagger(nn.Module):
         self.init_char_hidden()
         self.init_word_hidden()
 
-    def init_word_hidden(self):
-        """Initialise word LSTM hidden state."""
-        self.word_lstm_hidden = (
-            torch.zeros(1, 1, self.word_lstm_hidden_dim).to(self.device),
-            torch.zeros(1, 1, self.word_lstm_hidden_dim).to(self.device),
-        )
-
     def init_char_hidden(self):
         """Initialise character LSTM hidden state."""
         self.char_lstm_hidden = (
-            torch.zeros(1, 1, self.char_lstm_hidden_dim).to(self.device),
-            torch.zeros(1, 1, self.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(2, 1, self.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(2, 1, self.char_lstm_hidden_dim).to(self.device),
+        )
+
+    def init_word_hidden(self):
+        """Initialise word LSTM hidden state."""
+        self.word_lstm_hidden = (
+            torch.zeros(2, 1, self.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(2, 1, self.word_lstm_hidden_dim).to(self.device),
         )
 
     def forward(self, word_characters_ixs):
@@ -87,17 +96,16 @@ class LSTMCharTagger(nn.Module):
             for char_ix in char_ixs:
                 char_embed = self.char_embeddings(char_ix)
                 chars_repr, self.char_lstm_hidden = self.char_lstm(
-                    char_embed.view(self.directions, self.bs, -1), self.char_lstm_hidden
+                    char_embed.view(1, self.bs, self.char_embedding_dim), self.char_lstm_hidden
                 )
-
             word_repr.append(word_embed)
-            word_repr.append(chars_repr.view(1, -1))
+            word_repr.append(chars_repr.view(1, self.char_lstm_hidden_dim * self.directions))
 
         word_repr = torch.cat(word_repr, 1)  # From row to column
 
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
-            word_repr.view(sentence_length, self.bs, -1),
+            word_repr.view(sentence_length, self.bs, self.word_embedding_dim + self.char_lstm_hidden_dim * self.directions),
             self.word_lstm_hidden,
         )
 
