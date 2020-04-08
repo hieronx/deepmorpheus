@@ -9,17 +9,17 @@ import pickle, time
 
 from model.lstm_char import LSTMCharTagger
 from util import make_ixs, Namespace
-from dataset import PerseusCoNLLUDataset
+from dataset import PerseusDataset
 
 torch.manual_seed(1)
 
 args = Namespace(
-    word_embedding_dim = 10,
-    char_embedding_dim = 5,
-    word_hidden_dim = 100,
-    char_hidden_dim = 50,
-    batch_size = 1,
-    num_epochs = 20
+    word_embedding_dim=10,
+    char_embedding_dim=5,
+    word_hidden_dim=100,
+    char_hidden_dim=50,
+    batch_size=1,
+    num_epochs=20,
 )
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -27,10 +27,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train():
     # Read input
-    train = PerseusCoNLLUDataset(pyconll.load_from_file(
-        "data/perseus-conllu/grc_perseus-ud-train.conllu"
-    ))
-    val = PerseusCoNLLUDataset(pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu"))
+    train = PerseusDataset("data/perseus-conllu/grc_perseus-ud-train.conllu")
+    val = PerseusDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu")
     word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
 
     # Initialize model
@@ -58,7 +56,7 @@ def train():
         total = 0
 
         model.train()
-        for words, tags in tqdm(train, desc='Training...'):
+        for words, tags in tqdm(train, desc="Training..."):
             word_characters_ixs = []
             for word in words:
                 word_ix = (
@@ -88,7 +86,10 @@ def train():
         epoch_loss = train_loss / len(train)
         train_accuracy = 100.0 * correct / total
 
-        print("Epoch %d, training loss = %.4f, training accuracy = %.2f%%" % (epoch + 1, train_loss / len(train), train_accuracy))
+        print(
+            "Epoch %d, training loss = %.4f, training accuracy = %.2f%%"
+            % (epoch + 1, train_loss / len(train), train_accuracy)
+        )
         train_losses.append(train_loss / len(train))
 
         # Evaluate on validation dataset
@@ -97,7 +98,7 @@ def train():
         correct = 0
         total = 0
 
-        for words, tags in tqdm(val, desc='Evaluating...'):
+        for words, tags in tqdm(val, desc="Evaluating..."):
             word_characters_ixs = []
             for word in words:
                 word_ix = (

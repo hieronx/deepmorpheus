@@ -1,7 +1,8 @@
 import torch.utils.data
 import pyconll
 
-class PerseusCoNLLUDataset(torch.utils.data.Dataset):
+
+class PerseusDataset(torch.utils.data.Dataset):
     """This holds all the convenience methods for a dataset, such as loading as well as 
     implementing methods to make it usable with a dataloader"""
 
@@ -30,7 +31,7 @@ class PerseusCoNLLUDataset(torch.utils.data.Dataset):
 
     def create_indices(self):
         """Creates the indeces that are used in the neural network, effectively turning text into numbers"""
-        print('Creating indices for %s' % self.url)
+        print("Creating indices for %s" % self.url)
         self.word_to_ix = {"<UNK>": 0}
         self.char_to_ix = {"<UNK>": 0}
 
@@ -42,15 +43,16 @@ class PerseusCoNLLUDataset(torch.utils.data.Dataset):
                 for char in word:
                     if char not in self.char_to_ix:
                         self.char_to_ix[char] = len(self.char_to_ix)
-        
+
         self.tag_to_ix = {}
         for _, tags in self.sentences:
             for tag in tags:
                 if tag not in self.tag_to_ix:
                     self.tag_to_ix[tag] = len(self.tag_to_ix)
-    
+
     def get_indices(self):
         """Returns a tuple of the word indices, char indices and tag indices"""
-        if not 'word_to_ix' in self: self.create_indices()
+        if not "word_to_ix" in self:
+            self.create_indices()
 
         return (self.word_to_ix, self.char_to_ix, self.tag_to_ix)
