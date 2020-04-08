@@ -4,7 +4,6 @@ import torch.optim as optim
 import torch.utils
 import torch.autograd as autograd
 import pickle
-import pyconll
 
 from dataset import PerseusCoNLLUDataset
 from util import make_ixs
@@ -12,10 +11,8 @@ from util import make_ixs
 model = pickle.load(open("data/model.p", "rb"))
 device = "cpu"
 
-train = PerseusCoNLLUDataset(pyconll.load_from_file(
-    "data/perseus-conllu/grc_perseus-ud-train.conllu"
-))
-val = PerseusCoNLLUDataset(pyconll.load_from_file("data/perseus-conllu/grc_perseus-ud-dev.conllu"))
+train = PerseusCoNLLUDataset("data/perseus-conllu/grc_perseus-ud-train.conllu")
+val = PerseusCoNLLUDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu")
 word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
 
 ix_to_tag = {v: k for k, v in tag_to_ix.items()}

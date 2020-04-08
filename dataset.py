@@ -1,8 +1,12 @@
 import torch.utils.data
+import pyconll
 
 class PerseusCoNLLUDataset(torch.utils.data.Dataset):
 
-    def __init__(self, input_body):
+    def __init__(self, url):
+        """"Initializes the dataset from the provided input data url"""
+        self.url = url
+        input_body = pyconll.load_from_file(url)
         self.sentences = []
         for sentence in input_body:
             sentence_words = []
@@ -15,13 +19,16 @@ class PerseusCoNLLUDataset(torch.utils.data.Dataset):
                 self.sentences.append((sentence_words, sentence_tags))
 
     def __len__(self):
+        """Returns the length of the amount of sentences in this dataset"""
         return len(self.sentences)
 
-    def __getitem__(self, idx):
-        return self.sentences[idx]
+    def __getitem__(self, index):
+        """Gets the item at the provided index in this dataset"""
+        return self.sentences[index]
 
     def create_indices(self):
-        print('Creating indices...')
+        """Creates the indeces that are used in the neural network, effectively turning text into numbers"""
+        print('Creating indices for %s' % self.url)
         self.word_to_ix = {"<UNK>": 0}
         self.char_to_ix = {"<UNK>": 0}
 
@@ -41,6 +48,7 @@ class PerseusCoNLLUDataset(torch.utils.data.Dataset):
                     self.tag_to_ix[tag] = len(self.tag_to_ix)
     
     def get_indices(self):
+        """Returns a tuple of the word indices, char indices and tag indices"""
         if not 'word_to_ix' in self: self.create_indices()
 
         return (self.word_to_ix, self.char_to_ix, self.tag_to_ix)
