@@ -2,6 +2,8 @@ import torch.utils.data
 import pyconll
 
 class PerseusCoNLLUDataset(torch.utils.data.Dataset):
+    """This holds all the convenience methods for a dataset, such as loading as well as 
+    implementing methods to make it usable with a dataloader"""
 
     def __init__(self, url):
         """"Initializes the dataset from the provided input data url"""
