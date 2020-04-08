@@ -47,15 +47,21 @@ class LSTMCharTagger(nn.Module):
         self.char_embeddings = nn.Embedding(char_dict_size, char_embedding_dim)
 
         self.directions = 2
+        self.num_layers = 2
+
         self.char_lstm = nn.LSTM(
             char_embedding_dim,
             char_lstm_hidden_dim,
-            bidirectional=self.directions > 1
+            bidirectional=self.directions > 1,
+            dropout=0.2,
+            num_layers=self.num_layers
         )
         self.word_lstm = nn.LSTM(
             word_embedding_dim + char_lstm_hidden_dim * self.directions,
             word_lstm_hidden_dim,
             bidirectional=self.directions > 1,
+            dropout=0.2,
+            num_layers=self.num_layers
         )
 
         self.hidden2tag = nn.Linear(word_lstm_hidden_dim * self.directions, tagset_size)
@@ -69,15 +75,15 @@ class LSTMCharTagger(nn.Module):
     def init_char_hidden(self):
         """Initialise character LSTM hidden state."""
         self.char_lstm_hidden = (
-            torch.zeros(2, 1, self.char_lstm_hidden_dim).to(self.device),
-            torch.zeros(2, 1, self.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.char_lstm_hidden_dim).to(self.device),
         )
 
     def init_word_hidden(self):
         """Initialise word LSTM hidden state."""
         self.word_lstm_hidden = (
-            torch.zeros(2, 1, self.word_lstm_hidden_dim).to(self.device),
-            torch.zeros(2, 1, self.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.word_lstm_hidden_dim).to(self.device),
         )
 
     def forward(self, word_characters_ixs):
