@@ -5,3 +5,4 @@ data/maxent_treebank_pos_tagger/*
 __pycache__
 model-*.pickle
 .vscode
+lightning_logs

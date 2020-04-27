@@ -1,5 +1,5 @@
-import torch.utils.data
 import pyconll
+import torch.utils.data
 
 
 class PerseusDataset(torch.utils.data.Dataset):
@@ -10,16 +10,31 @@ class PerseusDataset(torch.utils.data.Dataset):
         """"Initializes the dataset from the provided input data url"""
         self.url = url
         input_body = pyconll.load_from_file(url)
+
+        self.number_of_tag_categories = 9
+
+        self.word_ids = {"<PAD>": 0}
+        self.character_ids = {"<PAD>": 0}
+        self.tag_ids = [{"<PAD>": 0} for _ in range(self.number_of_tag_categories)]
+
         self.sentences = []
         for sentence in input_body:
-            sentence_words = []
-            sentence_tags = []
+            tokenized_sentence = []
             for token in sentence:
-                sentence_words.append(token.form)
-                sentence_tags.append(token.upos)
+                word = token.form
+                characters = list(word)
+                tags = list(token.xpos)
+                tokenized_sentence.append(self.get_ids(word, characters, tags))
 
-            if len(sentence_words) > 0:
-                self.sentences.append((sentence_words, sentence_tags))
+            self.sentences.append(tokenized_sentence)
+
+        """
+            self.sentences = [
+                [(word, char[], tags[]), (word, char[], tags[]), ...],
+                [(word, char[], tags[]), (word, char[], tags[]), ...],
+                ...
+            ]
+        """
 
     def __len__(self):
         """Returns the length of the amount of sentences in this dataset"""
@@ -29,30 +44,18 @@ class PerseusDataset(torch.utils.data.Dataset):
         """Gets the item at the provided index in this dataset"""
         return self.sentences[index]
 
-    def create_indices(self):
-        """Creates the indeces that are used in the neural network, effectively turning text into numbers"""
-        print("Creating indices for %s" % self.url)
-        self.word_to_ix = {"<UNK>": 0}
-        self.char_to_ix = {"<UNK>": 0}
+    def get_ids(self, word, characters, tags):
+        if word not in self.word_ids: self.word_ids[word] = len(self.word_ids)
+        word_id = self.word_ids[word]
 
-        for words, _ in self.sentences:
-            for word in words:
-                if word not in self.word_to_ix:
-                    self.word_to_ix[word] = len(self.word_to_ix)
+        character_ids = []
+        for character in characters:
+            if character not in self.character_ids: self.character_ids[character] = len(self.character_ids)
+            character_ids.append(self.character_ids[character])
 
-                for char in word:
-                    if char not in self.char_to_ix:
-                        self.char_to_ix[char] = len(self.char_to_ix)
+        tag_ids = []
+        for idx, tag in enumerate(tags):
+            if tag not in self.tag_ids[idx]: self.tag_ids[idx][tag] = len(self.tag_ids[idx])
+            tag_ids.append(self.tag_ids[idx][tag])
 
-        self.tag_to_ix = {}
-        for _, tags in self.sentences:
-            for tag in tags:
-                if tag not in self.tag_to_ix:
-                    self.tag_to_ix[tag] = len(self.tag_to_ix)
-
-    def get_indices(self):
-        """Returns a tuple of the word indices, char indices and tag indices"""
-        if not "word_to_ix" in self:
-            self.create_indices()
-
-        return (self.word_to_ix, self.char_to_ix, self.tag_to_ix)
+        return word_id, character_ids, tag_ids
