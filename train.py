@@ -31,6 +31,8 @@ def train():
     val = PerseusDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu")
     word_to_ix, char_to_ix, tag_to_ix = train.get_indices()
 
+    print("Using device: " + str(device))
+
     # Initialize model
     model = LSTMCharTagger(
         args.word_embedding_dim,
