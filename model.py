@@ -73,25 +73,24 @@ class LSTMCharTagger(pl.LightningModule):
         # Shape: (sentence_len, 9, num_tag_output)
         return all_word_scores
 
-    def bce_loss(self, output, target):
-        return F.binary_cross_entropy(output, target)
+    def ce_loss(self, output, target):
+        return F.cross_entropy(output, target)
     
     def training_step(self, sentence, batch_idx):
         outputs = self.forward(sentence)
         # Shape: (sentence_len, 9, num_tag_output)
 
+        loss_all_sentences = 0.0
         for word_idx in range(len(sentence)):
             output = outputs[word_idx]
-            output = [torch.argmax(tag_scores) for tag_scores in output]
-            print(output)
             target = sentence[word_idx][2]
-            print(target.shape)
 
-            exit()
+            losses = [self.ce_loss(output[i].unsqueeze(0), target[i]) for i in range(9)]
+            loss_all_sentences += sum(losses)
+        
+        loss = loss_all_sentences / len(sentence)
 
         self.init_word_hidden()
-
-        loss = 0.42
 
         logs = {'train_loss': loss}
         return {'loss': loss, 'log': logs}
