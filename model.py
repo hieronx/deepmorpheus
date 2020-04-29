@@ -64,7 +64,7 @@ class LSTMCharTagger(pl.LightningModule):
             hidden_output = self.tag_fc[idx](x)
             # Shape: (sentence_len, num_tag_output)
 
-            tag_scores = F.log_softmax(hidden_output, dim=1).squeeze(1)
+            tag_scores = F.log_softmax(hidden_output).squeeze(1)
             # Shape: (sentence_len, num_tag_output)
 
             for word_idx, word_score in enumerate(tag_scores):
@@ -73,8 +73,8 @@ class LSTMCharTagger(pl.LightningModule):
         # Shape: (sentence_len, 9, num_tag_output)
         return all_word_scores
 
-    def ce_loss(self, output, target):
-        return F.cross_entropy(output, target)
+    def nll_loss(self, output, target):
+        return F.nll_loss(output, target)
     
     def training_step(self, sentence, batch_idx):
         outputs = self.forward(sentence)
@@ -85,7 +85,12 @@ class LSTMCharTagger(pl.LightningModule):
             output = outputs[word_idx]
             target = sentence[word_idx][2]
 
-            losses = [self.ce_loss(output[i].unsqueeze(0), target[i]) for i in range(9)]
+            if word_idx == 0 and batch_idx % 100 == 0:
+                print('Output: %s' % output)
+                print('Target: %s' % target)
+                print('--------')
+
+            losses = [self.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(9)]
             loss_all_sentences += sum(losses)
         
         loss = loss_all_sentences / len(sentence)
