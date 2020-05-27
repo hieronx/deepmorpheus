@@ -23,6 +23,7 @@ class PerseusDataset(torch.utils.data.Dataset):
                 word = token.form
                 characters = list(word)
                 tags = list(token.xpos)
+                assert len(tags) == 9
                 tokenized_sentence.append(self.get_ids(word, characters, tags))
 
             self.sentences.append(tokenized_sentence)

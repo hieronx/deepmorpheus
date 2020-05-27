@@ -7,6 +7,11 @@ from torch.utils.data import DataLoader
 
 from util import debug_mode
 
+TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
+
+def add_element_wise(list1, list2):
+    return [a + b for a, b in zip(list1, list2)]
+
 
 class LSTMCharTagger(pl.LightningModule):
     """LSTM part-os-speech (PoS) tagger."""
@@ -42,10 +47,8 @@ class LSTMCharTagger(pl.LightningModule):
 
         self.enable_char_level = True
 
-        self.first_tag_only = False
-
         tag_fc = []
-        for idx in range(1 if self.first_tag_only else len(self.train_data.tag_ids)):
+        for idx in range(len(self.train_data.tag_ids)):
             num_tag_outputs = len(self.train_data.tag_ids[idx])
             fc = nn.Linear(self.hparams.word_lstm_hidden_dim, num_tag_outputs)
             tag_fc.append(fc)
@@ -101,8 +104,6 @@ class LSTMCharTagger(pl.LightningModule):
         chars_reprs = torch.stack(chars_reprs).squeeze(1)
         word_repr = torch.cat([chars_reprs, word_embeddings], dim=1)
         
-        # print("Word hidden device: %s" % self.word_lstm_hidden[0].device)
-        # print("Word repr device: %S" % self.word_repr.device)
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
             word_repr.view(len(sentence), self.bs, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
@@ -124,21 +125,9 @@ class LSTMCharTagger(pl.LightningModule):
         # Shape: (sentence_len, 9, num_tag_output)
         return all_word_scores
 
-    def nll_loss(self, sentence, outputs):
-        loss_all_sentences = 0.0
-        for word_idx in range(len(sentence)):
-            output = outputs[word_idx]
-            target = sentence[word_idx][2]
-
-            losses = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(1 if self.first_tag_only else 9)]
-            loss_all_sentences += sum(losses)
-        
-        return loss_all_sentences / len(sentence)
-    
     def training_step(self, sentence, batch_idx):
         self.init_word_hidden()
         outputs = self.forward(sentence)
-        # self.device = "cuda:0"
         # Shape: (sentence_len, 9, num_tag_output)
 
         loss = self.nll_loss(sentence, outputs)
@@ -152,15 +141,60 @@ class LSTMCharTagger(pl.LightningModule):
         # Shape: (sentence_len, 9, num_tag_output)
 
         loss = self.nll_loss(sentence, outputs)
-        return {'val_loss': loss}
+        avg_acc, acc_by_tag = self.accuracy(sentence, outputs)
+        
+        return {'val_loss': loss, 'val_acc': avg_acc, 'acc_by_tag': acc_by_tag}
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
-        print('Validation loss is %.2f' % avg_loss)
+        avg_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
+        print('Validation loss is %.2f, validation accuracy is %.2f%%' % (avg_loss, avg_acc * 100))
 
-        log = {'val_loss': avg_loss}
+        log = {'val_loss': avg_loss, 'val_acc': avg_acc}
+
+        for i in range(9):
+            avg_tag_acc = torch.stack([x['acc_by_tag'][i] for x in outputs]).mean()
+            log['tag_acc_%s' % TAG_ID_TO_NAME[i]] = avg_tag_acc
+
         return {'avg_val_loss': avg_loss, 'log': log}
 
+    def nll_loss(self, sentence, outputs):
+        loss_all_sentences = 0.0
+        for word_idx in range(len(sentence)):
+            output = outputs[word_idx]
+            target = sentence[word_idx][2]
+
+            try:
+                losses = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(9)]
+                loss_all_sentences += sum(losses)
+            except Exception as e:
+                print(e)
+                print('output 5: %s' % str(output[5].unsqueeze(0)))
+                print('target 5: %s' % target[5])
+
+        return loss_all_sentences / len(sentence)
+
+    def accuracy(self, sentence, outputs):
+        sum_accuracy = 0.0
+        sum_acc_by_tag = [0 for i in range(9)]
+        for word_idx in range(len(sentence)):
+            output = outputs[word_idx]
+            target = sentence[word_idx][2]
+
+            try:
+                acc = [(torch.argmax(output[i]) == target[i]).float() for i in range(9)] # Accuracy per tag per word
+                sum_accuracy += sum(acc) / 9 # Accuracy per word
+                sum_acc_by_tag = add_element_wise(sum_acc_by_tag, acc)
+
+            except Exception as e:
+                print(e)
+                print('output 5: %s' % str(output[5].unsqueeze(0)))
+                print('target 5: %s' % target[5])
+        
+        acc_by_tag = [acc / len(sentence) for acc in sum_acc_by_tag]
+        
+        return sum_accuracy / len(sentence), acc_by_tag
+    
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
