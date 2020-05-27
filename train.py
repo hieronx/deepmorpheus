@@ -21,5 +21,5 @@ if __name__ == '__main__':
     val_data = PerseusDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu")
     model = LSTMCharTagger(hparams, train_data, val_data)
 
-    trainer = pl.Trainer() 
+    trainer = pl.Trainer(logger=pl.loggers.WandbLogger(project="nlp_classics", log_model=False)) 
     trainer.fit(model)
