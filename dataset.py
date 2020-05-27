@@ -8,8 +8,11 @@ class PerseusDataset(torch.utils.data.Dataset):
 
     def __init__(self, url):
         """"Initializes the dataset from the provided input data url"""
+        self.num_workers = 2
         self.url = url
-        input_body = pyconll.load_from_file(url)
+        with open(url, 'r') as f:
+            content = "\n".join(f.readlines())
+        input_body = pyconll.load_from_string(content)
 
         self.number_of_tag_categories = 9
 
