@@ -11,7 +11,7 @@ class PerseusDataset(torch.utils.data.Dataset):
         self.num_workers = 32
         self.url = url
         with open(url, 'r') as f:
-            content = "\n".join(f.readlines())
+                content = "\n".join(f.readlines())
         input_body = pyconll.load_from_string(content)
 
         self.number_of_tag_categories = 9
