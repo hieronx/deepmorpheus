@@ -8,7 +8,7 @@ class PerseusDataset(torch.utils.data.Dataset):
 
     def __init__(self, url):
         """"Initializes the dataset from the provided input data url"""
-        self.num_workers = 2
+        self.num_workers = 32
         self.url = url
         with open(url, 'r') as f:
             content = "\n".join(f.readlines())
