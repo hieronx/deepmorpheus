@@ -13,5 +13,5 @@ class Namespace:
 
 def debug_mode():
     """Runs the debug mode"""
-    embed()
+    embed(stack_depth = 1)
     exit()
