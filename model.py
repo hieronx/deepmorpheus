@@ -60,19 +60,19 @@ class LSTMCharTagger(pl.LightningModule):
 
         # TODO: shouldn't we initialize this differently?
         self.word_lstm_hidden = (
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim),
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim),
+            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
         )
 
     def init_char_hidden(self):
         """Initialise char LSTM hidden state."""
         self.char_lstm_hidden = (
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim),
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim),
+            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
         )
 
     def forward(self, sentence):
-        words = torch.tensor([word for word, _, _ in sentence])
+        words = torch.tensor([word for word, _, _ in sentence]).to(self.device)
         # Shape: (sentence_len, )
 
         word_embeddings = self.word_embeddings(words)
@@ -85,7 +85,7 @@ class LSTMCharTagger(pl.LightningModule):
         if self.enable_char_level:
             for word_idx in range(len(sentence)):
                 self.init_char_hidden()
-                chars = torch.tensor(sentence[word_idx][1])
+                chars = torch.tensor(sentence[word_idx][1]).to(self.device)
 
                 chars_repr = None  # Character-level representation.
                 # Character-level representation is the LSTM output of the last character.
@@ -100,7 +100,9 @@ class LSTMCharTagger(pl.LightningModule):
         
         chars_reprs = torch.stack(chars_reprs).squeeze(1)
         word_repr = torch.cat([chars_reprs, word_embeddings], dim=1)
-
+        
+        # print("Word hidden device: %s" % self.word_lstm_hidden[0].device)
+        # print("Word repr device: %S" % self.word_repr.device)
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
             word_repr.view(len(sentence), self.bs, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
@@ -134,24 +136,22 @@ class LSTMCharTagger(pl.LightningModule):
         return loss_all_sentences / len(sentence)
     
     def training_step(self, sentence, batch_idx):
+        self.init_word_hidden()
         outputs = self.forward(sentence)
+        # self.device = "cuda:0"
         # Shape: (sentence_len, 9, num_tag_output)
 
         loss = self.nll_loss(sentence, outputs)
-
-        self.init_word_hidden()
 
         logs = {'train_loss': loss}
         return {'loss': loss, 'log': logs}
 
     def validation_step(self, sentence, batch_idx):
+        self.init_word_hidden()
         outputs = self.forward(sentence)
         # Shape: (sentence_len, 9, num_tag_output)
 
         loss = self.nll_loss(sentence, outputs)
-
-        self.init_word_hidden()
-    
         return {'val_loss': loss}
 
     def validation_epoch_end(self, outputs):
