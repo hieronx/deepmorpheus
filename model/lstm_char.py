@@ -1,8 +1,8 @@
 import torch
+import torch.autograd as autograd
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.autograd as autograd
 
 # Source: https://github.com/sherif7810/lstm_pos_tagger/blob/master/main.py
 
