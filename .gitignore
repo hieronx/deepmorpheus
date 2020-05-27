@@ -6,3 +6,6 @@ __pycache__
 model-*.pickle
 .vscode
 lightning_logs
+data
+wandb
+nlp_classics
