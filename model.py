@@ -65,9 +65,11 @@ class LSTMCharTagger(pl.LightningModule):
         all_word_scores = [[] for _ in range(len(sentence))]
         for idx in range(len(self.tag_fc)):
             hidden_output = self.tag_fc[idx](x)
-            # Shape: (sentence_len, num_tag_output)
+            # Shape: (sentence_len, 1, num_tag_output)
 
-            tag_scores = F.log_softmax(hidden_output).squeeze(1)
+            # from IPython import embed; embed(); exit()
+
+            tag_scores = F.log_softmax(hidden_output, dim=2).squeeze(1)
             # Shape: (sentence_len, num_tag_output)
 
             for word_idx, word_score in enumerate(tag_scores):
