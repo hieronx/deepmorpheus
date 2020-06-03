@@ -22,6 +22,7 @@ class LSTMCharTagger(pl.LightningModule):
         self.train_data = train_data
         self.val_data = val_data
 
+        self.single_output = True
         self.directions = 1
         self.num_layers = 1
         self.bs = 1
@@ -48,7 +49,7 @@ class LSTMCharTagger(pl.LightningModule):
         self.enable_char_level = True
 
         tag_fc = []
-        for idx in range(len(self.train_data.tag_ids)):
+        for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
             num_tag_outputs = len(self.train_data.tag_ids[idx])
             fc = nn.Linear(self.hparams.word_lstm_hidden_dim, num_tag_outputs)
             tag_fc.append(fc)
@@ -152,7 +153,7 @@ class LSTMCharTagger(pl.LightningModule):
 
         log = {'val_loss': avg_loss, 'val_acc': avg_acc}
 
-        for i in range(9):
+        for i in range(len(self.tag_fc)):
             avg_tag_acc = torch.stack([x['acc_by_tag'][i] for x in outputs]).mean()
             log['tag_acc_%s' % TAG_ID_TO_NAME[i]] = avg_tag_acc
 
@@ -165,7 +166,7 @@ class LSTMCharTagger(pl.LightningModule):
             target = sentence[word_idx][2]
 
             try:
-                losses = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(9)]
+                losses = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(len(self.tag_fc))]
                 loss_all_sentences += sum(losses)
             except Exception as e:
                 print(e)
@@ -176,14 +177,14 @@ class LSTMCharTagger(pl.LightningModule):
 
     def accuracy(self, sentence, outputs):
         sum_accuracy = 0.0
-        sum_acc_by_tag = [0 for i in range(9)]
+        sum_acc_by_tag = [0 for i in range(len(self.tag_fc))]
         for word_idx in range(len(sentence)):
             output = outputs[word_idx]
             target = sentence[word_idx][2]
 
             try:
-                acc = [(torch.argmax(output[i]) == target[i]).float() for i in range(9)] # Accuracy per tag per word
-                sum_accuracy += sum(acc) / 9 # Accuracy per word
+                acc = [(torch.argmax(output[i]) == target[i]).float() for i in range(len(self.tag_fc))] # Accuracy per tag per word
+                sum_accuracy += sum(acc) / len(self.tag_fc) # Accuracy per word
                 sum_acc_by_tag = add_element_wise(sum_acc_by_tag, acc)
 
             except Exception as e:
@@ -199,7 +200,7 @@ class LSTMCharTagger(pl.LightningModule):
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     def train_dataloader(self):
-        return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=1)
+        return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=4)
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=1, num_workers=1)
+        return DataLoader(self.val_data, batch_size=1, num_workers=4)
