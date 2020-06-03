@@ -23,8 +23,8 @@ class LSTMCharTagger(pl.LightningModule):
         self.val_data = val_data
 
         self.single_output = True
-        self.directions = 1
-        self.num_layers = 1
+        self.directions = 2
+        self.num_layers = 2
         self.bs = 1
 
         self.word_embeddings = nn.Embedding(len(self.train_data.word_ids), self.hparams.word_embedding_dim)
@@ -34,7 +34,7 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions,
             self.hparams.word_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0,
+            dropout=0.0,
             num_layers=self.num_layers
         )
 
@@ -42,16 +42,20 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.char_embedding_dim,
             self.hparams.char_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0,
+            dropout=0.0,
             num_layers=self.num_layers
         )
 
         self.enable_char_level = True
 
+        self.cls_fc_dim = 512
+        self.cls_fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, self.cls_fc_dim)
+        self.dropout = nn.Dropout(0.0)
+
         tag_fc = []
         for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
             num_tag_outputs = len(self.train_data.tag_ids[idx])
-            fc = nn.Linear(self.hparams.word_lstm_hidden_dim, num_tag_outputs)
+            fc = nn.Linear(self.cls_fc_dim, num_tag_outputs)
             tag_fc.append(fc)
 
         self.tag_fc = nn.ModuleList(tag_fc)
@@ -112,9 +116,12 @@ class LSTMCharTagger(pl.LightningModule):
         )
         # Shape: (sentence_len, batch_size, word_lstm_hidden_dim)
 
+        hidden_repr = self.cls_fc(sentence_repr)
+        regularized_repr = self.dropout(hidden_repr)
+
         all_word_scores = [[] for _ in range(len(sentence))]
         for idx in range(len(self.tag_fc)):
-            hidden_output = self.tag_fc[idx](sentence_repr)
+            hidden_output = self.tag_fc[idx](regularized_repr)
             # Shape: (sentence_len, 1, num_tag_output)
 
             tag_scores = F.log_softmax(hidden_output, dim=2).squeeze(1)
@@ -159,21 +166,25 @@ class LSTMCharTagger(pl.LightningModule):
 
         return {'avg_val_loss': avg_loss, 'log': log}
 
+
+    # Nu: avg nll loss per woord
+    # nll_loss([output_word1, output_word2, ...], [target_word1, target_word2, ...])
+
     def nll_loss(self, sentence, outputs):
-        loss_all_sentences = 0.0
+        loss_all_words = 0.0
         for word_idx in range(len(sentence)):
             output = outputs[word_idx]
             target = sentence[word_idx][2]
 
             try:
-                losses = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(len(self.tag_fc))]
-                loss_all_sentences += sum(losses)
+                loss_per_tag = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(len(self.tag_fc))]
+                loss_all_words += sum(loss_per_tag)
             except Exception as e:
                 print(e)
                 print('output 5: %s' % str(output[5].unsqueeze(0)))
                 print('target 5: %s' % target[5])
-
-        return loss_all_sentences / len(sentence)
+            
+        return loss_all_words / len(sentence)
 
     def accuracy(self, sentence, outputs):
         sum_accuracy = 0.0

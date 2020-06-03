@@ -12,9 +12,9 @@ class PerseusDataset(torch.utils.data.Dataset):
         input_body = pyconll.load_from_file(url)
         self.number_of_tag_categories = 9
 
-        self.word_ids = {"<PAD>": 0}
-        self.character_ids = {"<PAD>": 0}
-        self.tag_ids = [{"<PAD>": 0} for _ in range(self.number_of_tag_categories)]
+        self.word_ids = {}
+        self.character_ids = {}
+        self.tag_ids = [{} for _ in range(self.number_of_tag_categories)]
 
         self.sentences = []
         for sentence in input_body:
