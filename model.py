@@ -48,14 +48,10 @@ class LSTMCharTagger(pl.LightningModule):
 
         self.enable_char_level = True
 
-        self.cls_fc_dim = 512
-        self.cls_fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, self.cls_fc_dim)
-        self.dropout = nn.Dropout(0.2)
-
         tag_fc = []
         for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
             num_tag_outputs = len(self.train_data.tag_ids[idx])
-            fc = nn.Linear(self.cls_fc_dim, num_tag_outputs)
+            fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, num_tag_outputs)
             tag_fc.append(fc)
 
         self.tag_fc = nn.ModuleList(tag_fc)
@@ -116,12 +112,9 @@ class LSTMCharTagger(pl.LightningModule):
         )
         # Shape: (sentence_len, batch_size, word_lstm_hidden_dim)
 
-        hidden_repr = self.cls_fc(sentence_repr)
-        regularized_repr = self.dropout(hidden_repr)
-
         all_word_scores = [[] for _ in range(len(sentence))]
         for idx in range(len(self.tag_fc)):
-            hidden_output = self.tag_fc[idx](regularized_repr)
+            hidden_output = self.tag_fc[idx](sentence_repr)
             # Shape: (sentence_len, 1, num_tag_output)
 
             tag_scores = F.log_softmax(hidden_output, dim=2).squeeze(1)
