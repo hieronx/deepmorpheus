@@ -34,7 +34,7 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions,
             self.hparams.word_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0.0,
+            dropout=0.2,
             num_layers=self.num_layers
         )
 
@@ -42,7 +42,7 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.char_embedding_dim,
             self.hparams.char_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0.0,
+            dropout=0.2,
             num_layers=self.num_layers
         )
 
@@ -50,7 +50,7 @@ class LSTMCharTagger(pl.LightningModule):
 
         self.cls_fc_dim = 512
         self.cls_fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, self.cls_fc_dim)
-        self.dropout = nn.Dropout(0.0)
+        self.dropout = nn.Dropout(0.2)
 
         tag_fc = []
         for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
