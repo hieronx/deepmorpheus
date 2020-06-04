@@ -31,7 +31,7 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions,
             self.hparams.word_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0.2,
+            dropout=0.3,
             num_layers=self.num_layers
         )
 
@@ -39,7 +39,7 @@ class LSTMCharTagger(pl.LightningModule):
             self.hparams.char_embedding_dim,
             self.hparams.char_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0.2,
+            dropout=0.3,
             num_layers=self.num_layers
         )
 
