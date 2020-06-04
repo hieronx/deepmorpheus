@@ -25,7 +25,6 @@ class LSTMCharTagger(pl.LightningModule):
         self.single_output = True
         self.directions = 2
         self.num_layers = 2
-        self.bs = 1
 
         self.word_embeddings = nn.Embedding(len(self.train_data.word_ids), self.hparams.word_embedding_dim)
         self.char_embeddings = nn.Embedding(len(self.train_data.character_ids), self.hparams.char_embedding_dim)
@@ -96,7 +95,7 @@ class LSTMCharTagger(pl.LightningModule):
                 for char in chars:
                     char_embed = self.char_embeddings(char)
                     chars_repr, self.char_lstm_hidden = self.char_lstm(
-                        char_embed.view(1, self.bs, self.hparams.char_embedding_dim), self.char_lstm_hidden
+                        char_embed.view(1, self.hparams.batch_size, self.hparams.char_embedding_dim), self.char_lstm_hidden
                     )
 
                 chars_repr = chars_repr.view(1, self.hparams.char_lstm_hidden_dim * self.directions)
@@ -108,21 +107,25 @@ class LSTMCharTagger(pl.LightningModule):
 
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
-            word_repr.view(len(sentence), self.bs, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
+            word_repr.view(len(sentence), self.hparams.batch_size, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
             self.word_lstm_hidden,
         )
         # Shape: (sentence_len, batch_size, word_lstm_hidden_dim)
 
-        all_word_scores = [[] for _ in range(len(sentence))]
+        sentence_repr = sentence_repr.view(len(sentence), self.hparams.word_lstm_hidden_dim * self.directions)
+        # Shape: (sentence_len, word_lstm_hidden_dim * self.directions)
+
+        all_word_scores = [[] for _ in range(len(sentence))] # for each word, for each tag, a list of scores per tag output
+
         for idx in range(len(self.tag_fc)):
             hidden_output = self.tag_fc[idx](sentence_repr)
-            # Shape: (sentence_len, 1, num_tag_output)
-
-            tag_scores = F.log_softmax(hidden_output, dim=2).squeeze(1)
             # Shape: (sentence_len, num_tag_output)
 
-            for word_idx, word_score in enumerate(tag_scores):
-                all_word_scores[word_idx].append(word_score)
+            tag_scores = F.log_softmax(hidden_output, dim=1)
+            # Shape: (sentence_len, num_tag_output)
+            
+            for word_idx, word_scores in enumerate(tag_scores):
+                all_word_scores[word_idx].append(word_scores)
 
         # Shape: (sentence_len, 9, num_tag_output)
         return all_word_scores
