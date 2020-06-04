@@ -22,7 +22,7 @@ class LSTMCharTagger(pl.LightningModule):
         self.train_data = train_data
         self.val_data = val_data
 
-        self.single_output = True
+        self.single_output = False
         self.directions = 2
         self.num_layers = 2
 
