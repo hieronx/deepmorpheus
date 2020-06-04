@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('--word-lstm-hidden-dim', type=int, default=500)
     parser.add_argument('--char-embedding-dim', type=int, default=20)
     parser.add_argument('--char-lstm-hidden-dim', type=int, default=200)
+    parser.add_argument('--track', action='store_true')
 
     parser = pl.Trainer.add_argparse_args(parser)
     hparams = parser.parse_args()
@@ -24,7 +25,7 @@ if __name__ == '__main__':
     pl.seed_everything(1)
     trainer = pl.Trainer.from_argparse_args(
         hparams,
-        logger=pl.loggers.WandbLogger(project="nlp_classics", log_model=False),
+        logger=pl.loggers.WandbLogger(project="nlp_classics", log_model=False) if hparams.track else None,
         deterministic=True
     )
     trainer.fit(model)

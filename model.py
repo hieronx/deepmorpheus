@@ -85,7 +85,8 @@ class LSTMCharTagger(pl.LightningModule):
         word_embeddings_bs = word_embeddings.view(len(sentence), self.hparams.batch_size, self.hparams.word_embedding_dim)
         # Shape: (sentence_len, batch_size, word_embedding_dim)
 
-        chars_reprs = []
+        # chars_reprs = []
+        word_repr = []
         if self.enable_char_level:
             for word_idx in range(len(sentence)):
                 self.init_char_hidden()
@@ -100,10 +101,17 @@ class LSTMCharTagger(pl.LightningModule):
                     )
                 
                 chars_repr = chars_repr.view(1, self.hparams.char_lstm_hidden_dim * self.directions)
-                chars_reprs.append(chars_repr)
-        
-        chars_reprs = torch.stack(chars_reprs).squeeze(1)
-        word_repr = torch.cat([chars_reprs, word_embeddings], dim=1)
+                # chars_reprs.append(chars_repr)
+
+                word_repr.append(word_embeddings[0].unsqueeze(0))
+                word_repr.append(chars_repr)
+
+        # from IPython import embed; embed(); exit()
+        word_repr = torch.cat(word_repr, dim=1) # From row to column
+
+        # chars_reprs = torch.stack(chars_reprs).squeeze(1)
+        # from IPython import embed; embed(); exit()
+        # word_repr = torch.cat([chars_reprs, word_embeddings], dim=1)
         
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
