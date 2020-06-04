@@ -211,4 +211,4 @@ class LSTMCharTagger(pl.LightningModule):
         return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=4)
 
     def val_dataloader(self):
-        return DataLoader(self.train_data, batch_size=1, num_workers=4)
+        return DataLoader(self.val_data, batch_size=1, num_workers=4)

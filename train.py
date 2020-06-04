@@ -19,7 +19,7 @@ if __name__ == '__main__':
     hparams = parser.parse_args()
 
     train_data = PerseusDataset("data/perseus-conllu/grc_perseus-ud-train.conllu")
-    val_data = PerseusDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu")
+    val_data = PerseusDataset("data/perseus-conllu/grc_perseus-ud-dev.conllu", False, train_data.word_ids, train_data.character_ids, train_data.tag_ids)
     model = LSTMCharTagger(hparams, train_data, val_data)
 
     pl.seed_everything(1)

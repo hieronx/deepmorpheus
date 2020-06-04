@@ -6,15 +6,16 @@ class PerseusDataset(torch.utils.data.Dataset):
     """This holds all the convenience methods for a dataset, such as loading as well as 
     implementing methods to make it usable with a dataloader"""
 
-    def __init__(self, url):
+    def __init__(self, url, tokenize=True, word_ids={"<UNK>": 0}, character_ids={"<UNK>": 0}, tag_ids=None):
         """"Initializes the dataset from the provided input data url"""
         self.url = url
+        self.tokenize = tokenize
         input_body = pyconll.load_from_file(url)
         self.number_of_tag_categories = 9
 
-        self.word_ids = {}
-        self.character_ids = {}
-        self.tag_ids = [{} for _ in range(self.number_of_tag_categories)]
+        self.word_ids = word_ids
+        self.character_ids = character_ids
+        self.tag_ids = [{"<UNK>": 0} for _ in range(self.number_of_tag_categories)] if not tag_ids else tag_ids
 
         self.sentences = []
         for sentence in input_body:
@@ -24,7 +25,7 @@ class PerseusDataset(torch.utils.data.Dataset):
                 characters = list(word)
                 tags = list(token.xpos)
                 assert len(tags) == 9
-                tokenized_sentence.append(self.get_ids(word, characters, tags))
+                tokenized_sentence.append(self.get_ids_and_tokenize(word, characters, tags) if self.tokenize else self.get_ids(word, characters, tags))
 
             self.sentences.append(tokenized_sentence)
 
@@ -44,7 +45,7 @@ class PerseusDataset(torch.utils.data.Dataset):
         """Gets the item at the provided index in this dataset"""
         return self.sentences[index]
 
-    def get_ids(self, word, characters, tags):
+    def get_ids_and_tokenize(self, word, characters, tags):
         if word not in self.word_ids: self.word_ids[word] = len(self.word_ids)
         word_id = self.word_ids[word]
 
@@ -57,5 +58,21 @@ class PerseusDataset(torch.utils.data.Dataset):
         for idx, tag in enumerate(tags):
             if tag not in self.tag_ids[idx]: self.tag_ids[idx][tag] = len(self.tag_ids[idx])
             tag_ids.append(self.tag_ids[idx][tag])
+
+        return word_id, character_ids, tag_ids
+
+    def get_ids(self, word, characters, tags):
+        if word in self.word_ids: word_id = self.word_ids[word]
+        else: word_id = self.word_ids["<UNK>"]
+
+        character_ids = []
+        for character in characters:
+            if character in self.character_ids: character_ids.append(self.character_ids[character])
+            else: character_ids.append(self.character_ids["<UNK>"])
+
+        tag_ids = []
+        for idx, tag in enumerate(tags):
+            if tag in self.tag_ids[idx]: tag_ids.append(self.tag_ids[idx][tag])
+            else: tag_ids.append(self.tag_ids[idx]["<UNK>"])
 
         return word_id, character_ids, tag_ids
