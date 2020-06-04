@@ -174,7 +174,7 @@ class LSTMCharTagger(pl.LightningModule):
             target = sentence[word_idx][2]
 
             try:
-                loss_per_tag = [F.nll_loss(output[i].unsqueeze(0), target[i]) for i in range(len(self.tag_fc))]
+                loss_per_tag = [F.nll_loss(output[tag_idx].unsqueeze(0), target[tag_idx]) for tag_idx in range(len(self.tag_fc))]
                 loss_all_words += sum(loss_per_tag)
             except Exception as e:
                 print(e)
@@ -211,4 +211,4 @@ class LSTMCharTagger(pl.LightningModule):
         return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=4)
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=1, num_workers=4)
+        return DataLoader(self.train_data, batch_size=1, num_workers=4)
