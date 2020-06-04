@@ -98,13 +98,13 @@ class LSTMCharTagger(pl.LightningModule):
                     chars_repr, self.char_lstm_hidden = self.char_lstm(
                         char_embed.view(1, self.bs, self.hparams.char_embedding_dim), self.char_lstm_hidden
                     )
-                
+
                 chars_repr = chars_repr.view(1, self.hparams.char_lstm_hidden_dim * self.directions)
                 chars_reprs.append(chars_repr)
-        
+
         chars_reprs = torch.stack(chars_reprs).squeeze(1)
         word_repr = torch.cat([chars_reprs, word_embeddings], dim=1)
-        
+
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
             # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
             word_repr.view(len(sentence), self.bs, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
@@ -143,7 +143,7 @@ class LSTMCharTagger(pl.LightningModule):
 
         loss = self.nll_loss(sentence, outputs)
         avg_acc, acc_by_tag = self.accuracy(sentence, outputs)
-        
+
         return {'val_loss': loss, 'val_acc': avg_acc, 'acc_by_tag': acc_by_tag}
 
     def validation_epoch_end(self, outputs):
@@ -176,7 +176,7 @@ class LSTMCharTagger(pl.LightningModule):
                 print(e)
                 print('output 5: %s' % str(output[5].unsqueeze(0)))
                 print('target 5: %s' % target[5])
-            
+
         return loss_all_words / len(sentence)
 
     def accuracy(self, sentence, outputs):
@@ -195,11 +195,11 @@ class LSTMCharTagger(pl.LightningModule):
                 print(e)
                 print('output 5: %s' % str(output[5].unsqueeze(0)))
                 print('target 5: %s' % target[5])
-        
+
         acc_by_tag = [acc / len(sentence) for acc in sum_acc_by_tag]
-        
+
         return sum_accuracy / len(sentence), acc_by_tag
-    
+
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
