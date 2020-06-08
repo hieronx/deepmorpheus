@@ -56,8 +56,6 @@ class LSTMCharTagger(pl.LightningModule):
 
     def init_word_hidden(self):
         """Initialise word LSTM hidden state."""
-
-        # TODO: shouldn't we initialize this differently?
         self.word_lstm_hidden = (
             torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
             torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
