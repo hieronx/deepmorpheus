@@ -4,3 +4,4 @@ betacode==1.0
 pygtrie==2.3.3 # Required for betacode
 pyconll==2.2.1
 bs4==0.0.1
+requests==2.23.0

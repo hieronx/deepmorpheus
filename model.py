@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from gensim.models import KeyedVectors
 from torch.utils.data import DataLoader
 
 from util import add_element_wise
@@ -14,20 +13,19 @@ TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "ge
 class LSTMCharTagger(pl.LightningModule):
     """LSTM part-os-speech (PoS) tagger."""
 
-    def __init__(self, hparams, train_data, val_data):
+    def __init__(self, hparams, train_data, val_data, word_embedding_dim, char_embedding_dim):
         super(LSTMCharTagger, self).__init__()
         self.hparams = hparams
         self.train_data = train_data
         self.val_data = val_data
+        self.word_embedding_dim = word_embedding_dim
+        self.char_embedding_dim = char_embedding_dim
 
         self.single_output = False
         self.directions = 1 if self.hparams.disable_bidirectional else 2
         self.hparams.num_lstm_layers = 2
 
-        word_embeddings_model = KeyedVectors.load_word2vec_format(self.hparams.embeddings_dir + "/words_greek.bin")
-        self.word_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(word_embeddings_model.vectors))
-
-        self.word_lstm_input_dim = self.hparams.word_embedding_dim if hparams.disable_char_level else self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions
+        self.word_lstm_input_dim = self.word_embedding_dim if hparams.disable_char_level else self.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions
         self.word_lstm = nn.LSTM(
             self.word_lstm_input_dim,
             self.hparams.word_lstm_hidden_dim,
@@ -37,12 +35,9 @@ class LSTMCharTagger(pl.LightningModule):
         )
         self.init_word_hidden()
 
-        if not hparams.disable_char_level:
-            char_embeddings_model = KeyedVectors.load_word2vec_format(self.hparams.embeddings_dir + "/chars_greek.bin")
-            self.char_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(char_embeddings_model.vectors))
-        
+        if not hparams.disable_char_level:        
             self.char_lstm = nn.LSTM(
-                self.hparams.char_embedding_dim,
+                self.char_embedding_dim,
                 self.hparams.char_lstm_hidden_dim,
                 bidirectional=self.directions > 1,
                 dropout=self.hparams.dropout,
@@ -73,32 +68,29 @@ class LSTMCharTagger(pl.LightningModule):
         )
 
     def forward(self, sentence):
-        words = torch.tensor([word for word, _, _ in sentence]).to(self.device)
-
-        word_embeddings = self.word_embeddings(words)
-        word_embeddings_bs = word_embeddings.view(len(sentence), self.hparams.batch_size, self.hparams.word_embedding_dim)
+        words = torch.stack([word.squeeze(0) for word, _, _ in sentence]).to(self.device)
+        words_bs = words.view(len(sentence), self.hparams.batch_size, self.word_embedding_dim)
 
         word_repr = []
         if not self.hparams.disable_char_level:
             for word_idx in range(len(sentence)):
                 self.init_char_hidden() # Don't store representation between words
-                chars = torch.tensor(sentence[word_idx][1]).to(self.device)
+                chars = torch.stack(sentence[word_idx][1]).to(self.device)
 
                 # Character-level representation is the LSTM output of the last character.
                 chars_repr = None
                 for char in chars:
-                    char_embed = self.char_embeddings(char)
                     chars_repr, self.char_lstm_hidden = self.char_lstm(
-                        char_embed.view(1, self.hparams.batch_size, self.hparams.char_embedding_dim), self.char_lstm_hidden
+                        char.view(1, self.hparams.batch_size, self.char_embedding_dim), self.char_lstm_hidden
                     )
 
                 chars_repr = chars_repr.view(1, self.hparams.char_lstm_hidden_dim * self.directions)
 
-                word_repr.append(word_embeddings[0].unsqueeze(0))
+                word_repr.append(words[0].unsqueeze(0))
                 word_repr.append(chars_repr)
         else:
             for word_idx in range(len(sentence)):
-                word_repr.append(word_embeddings[0].unsqueeze(0))
+                word_repr.append(words[0].unsqueeze(0))
 
         # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
         word_repr = torch.cat(word_repr, dim=1) # From row to column
