@@ -10,3 +10,4 @@ data
 wandb
 nlp_classics
 checkpoints
+embeddings

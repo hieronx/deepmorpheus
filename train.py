@@ -9,6 +9,7 @@ from model import LSTMCharTagger
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data-dir', type=str, default="data")
+    parser.add_argument('--embeddings-dir', type=str, default="embeddings/output")
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--learning-rate', type=float, default=4e-3) # Calculated by the LR finder
     parser.add_argument('--word-embedding-dim', type=int, default=100)

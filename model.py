@@ -3,12 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from gensim.models import KeyedVectors
 from torch.utils.data import DataLoader
 
-TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
+from util import add_element_wise
 
-def add_element_wise(list1, list2):
-    return [a + b for a, b in zip(list1, list2)]
+TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
 
 
 class LSTMCharTagger(pl.LightningModule):
@@ -24,7 +24,9 @@ class LSTMCharTagger(pl.LightningModule):
         self.directions = 1 if self.hparams.disable_bidirectional else 2
         self.hparams.num_lstm_layers = 2
 
-        self.word_embeddings = nn.Embedding(len(self.train_data.word_ids), self.hparams.word_embedding_dim)
+        word_embeddings_model = KeyedVectors.load_word2vec_format(self.hparams.embeddings_dir + "/words_greek.bin")
+        self.word_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(word_embeddings_model.vectors))
+
         self.word_lstm_input_dim = self.hparams.word_embedding_dim if hparams.disable_char_level else self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions
         self.word_lstm = nn.LSTM(
             self.word_lstm_input_dim,
@@ -36,7 +38,9 @@ class LSTMCharTagger(pl.LightningModule):
         self.init_word_hidden()
 
         if not hparams.disable_char_level:
-            self.char_embeddings = nn.Embedding(len(self.train_data.character_ids), self.hparams.char_embedding_dim)
+            char_embeddings_model = KeyedVectors.load_word2vec_format(self.hparams.embeddings_dir + "/chars_greek.bin")
+            self.char_embeddings = nn.Embedding.from_pretrained(torch.FloatTensor(char_embeddings_model.vectors))
+        
             self.char_lstm = nn.LSTM(
                 self.hparams.char_embedding_dim,
                 self.hparams.char_lstm_hidden_dim,
@@ -150,10 +154,6 @@ class LSTMCharTagger(pl.LightningModule):
             log['tag_acc_%s' % TAG_ID_TO_NAME[i]] = avg_tag_acc
 
         return {'avg_val_loss': avg_loss, 'log': log}
-
-
-    # Nu: avg nll loss per woord
-    # nll_loss([output_word1, output_word2, ...], [target_word1, target_word2, ...])
 
     def nll_loss(self, sentence, outputs):
         loss_all_words = 0.0
