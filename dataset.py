@@ -66,8 +66,11 @@ class Embeddings():
         self.char = KeyedVectors.load_word2vec_format(data_dir + "/char_embeddings.bin")
         self.char_dim = self.char.vector_size
 
+        self.unknown_word_embed = torch.rand(self.word_dim)
+        self.unknown_char_embed = torch.rand(self.char_dim)
+
     def unknown_word(self):
-        return torch.rand(self.word_dim)
+        return self.unknown_word_embed
 
     def unknown_char(self):
-        return torch.rand(self.char_dim)
+        return self.unknown_char_embed
