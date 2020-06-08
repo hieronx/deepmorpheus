@@ -21,29 +21,30 @@ class LSTMCharTagger(pl.LightningModule):
         self.val_data = val_data
 
         self.single_output = False
-        self.directions = 2
-        self.num_layers = 2
+        self.directions = 1 if self.hparams.disable_bidirectional else 2
+        self.hparams.num_lstm_layers = 2
 
         self.word_embeddings = nn.Embedding(len(self.train_data.word_ids), self.hparams.word_embedding_dim)
-        self.char_embeddings = nn.Embedding(len(self.train_data.character_ids), self.hparams.char_embedding_dim)
-
+        self.word_lstm_input_dim = self.hparams.word_embedding_dim if hparams.disable_char_level else self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions
         self.word_lstm = nn.LSTM(
-            self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions,
+            self.word_lstm_input_dim,
             self.hparams.word_lstm_hidden_dim,
             bidirectional=self.directions > 1,
-            dropout=0.3,
-            num_layers=self.num_layers
+            dropout=self.hparams.dropout,
+            num_layers=self.hparams.num_lstm_layers
         )
+        self.init_word_hidden()
 
-        self.char_lstm = nn.LSTM(
-            self.hparams.char_embedding_dim,
-            self.hparams.char_lstm_hidden_dim,
-            bidirectional=self.directions > 1,
-            dropout=0.3,
-            num_layers=self.num_layers
-        )
-
-        self.enable_char_level = True
+        if not hparams.disable_char_level:
+            self.char_embeddings = nn.Embedding(len(self.train_data.character_ids), self.hparams.char_embedding_dim)
+            self.char_lstm = nn.LSTM(
+                self.hparams.char_embedding_dim,
+                self.hparams.char_lstm_hidden_dim,
+                bidirectional=self.directions > 1,
+                dropout=self.hparams.dropout,
+                num_layers=self.hparams.num_lstm_layers
+            )
+            self.init_char_hidden()
 
         tag_fc = []
         for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
@@ -53,43 +54,36 @@ class LSTMCharTagger(pl.LightningModule):
 
         self.tag_fc = nn.ModuleList(tag_fc)
 
-        self.init_word_hidden()
-        self.init_char_hidden()
-
     def init_word_hidden(self):
         """Initialise word LSTM hidden state."""
 
         # TODO: shouldn't we initialize this differently?
         self.word_lstm_hidden = (
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.word_lstm_hidden_dim).to(self.device),
         )
 
     def init_char_hidden(self):
         """Initialise char LSTM hidden state."""
         self.char_lstm_hidden = (
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
-            torch.zeros(self.directions * self.num_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
+            torch.zeros(self.directions * self.hparams.num_lstm_layers, 1, self.hparams.char_lstm_hidden_dim).to(self.device),
         )
 
     def forward(self, sentence):
         words = torch.tensor([word for word, _, _ in sentence]).to(self.device)
-        # Shape: (sentence_len, )
 
         word_embeddings = self.word_embeddings(words)
-        # Shape: (sentence_len, word_embedding_dim)
-
         word_embeddings_bs = word_embeddings.view(len(sentence), self.hparams.batch_size, self.hparams.word_embedding_dim)
-        # Shape: (sentence_len, batch_size, word_embedding_dim)
 
         word_repr = []
-        if self.enable_char_level:
+        if not self.hparams.disable_char_level:
             for word_idx in range(len(sentence)):
-                self.init_char_hidden()
+                self.init_char_hidden() # Don't store representation between words
                 chars = torch.tensor(sentence[word_idx][1]).to(self.device)
 
-                chars_repr = None  # Character-level representation.
                 # Character-level representation is the LSTM output of the last character.
+                chars_repr = None
                 for char in chars:
                     char_embed = self.char_embeddings(char)
                     chars_repr, self.char_lstm_hidden = self.char_lstm(
@@ -100,27 +94,25 @@ class LSTMCharTagger(pl.LightningModule):
 
                 word_repr.append(word_embeddings[0].unsqueeze(0))
                 word_repr.append(chars_repr)
+        else:
+            for word_idx in range(len(sentence)):
+                word_repr.append(word_embeddings[0].unsqueeze(0))
 
+        # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
         word_repr = torch.cat(word_repr, dim=1) # From row to column
 
         sentence_repr, self.word_lstm_hidden = self.word_lstm(
-            # Each sentence embedding dimensions are word embedding dimensions + character representation dimensions
-            word_repr.view(len(sentence), self.hparams.batch_size, self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions),
+            word_repr.view(len(sentence), self.hparams.batch_size, self.word_lstm_input_dim),
             self.word_lstm_hidden,
         )
-        # Shape: (sentence_len, batch_size, word_lstm_hidden_dim)
 
         sentence_repr = sentence_repr.view(len(sentence), self.hparams.word_lstm_hidden_dim * self.directions)
-        # Shape: (sentence_len, word_lstm_hidden_dim * self.directions)
 
-        all_word_scores = [[] for _ in range(len(sentence))] # for each word, for each tag, a list of scores per tag output
+        all_word_scores = [[] for _ in range(len(sentence))]
 
         for idx in range(len(self.tag_fc)):
             hidden_output = self.tag_fc[idx](sentence_repr)
-            # Shape: (sentence_len, num_tag_output)
-
             tag_scores = F.log_softmax(hidden_output, dim=1)
-            # Shape: (sentence_len, num_tag_output)
             
             for word_idx, word_scores in enumerate(tag_scores):
                 all_word_scores[word_idx].append(word_scores)
