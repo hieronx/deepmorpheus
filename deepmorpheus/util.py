@@ -1,21 +1,15 @@
 import os
-
 import requests
-import torch
 from tqdm import tqdm
 
-
-def make_ixs(seq, to_ix, device):
-    ixs = torch.tensor([to_ix[w] if w in to_ix else to_ix["<UNK>"] for w in seq]).to(
-        device
-    )
-    return ixs
-
 class Namespace:
+    """Simple class meant to make it possible to address dict entries with dot notation
+    so dict[key] become dict.key"""
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
 def add_element_wise(list1, list2):
+    """Adds the two lists interleaved by eachother"""
     return [a + b for a, b in zip(list1, list2)]
 
 # Source: https://gist.github.com/wy193777/0e2a4932e81afc6aa4c8f7a2984f34e2

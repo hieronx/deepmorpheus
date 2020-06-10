@@ -1,7 +1,7 @@
-import os
 import pickle
 from dataclasses import dataclass, field
 from typing import Dict, List
+from os import path
 
 import pyconll
 import torch.utils.data
@@ -39,15 +39,14 @@ class PerseusDataset(torch.utils.data.Dataset):
         assert self.dataset_fn is not None, "You need to use the subclasses of PerseusDataset"
 
         # First we try to load the vocab pickle, if it doesn't exist yet we must create it
-        init_vocab = False
-        vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
-        if os.path.isfile(vocab_path):
+        vocab_path = path.join(data_dir, "vocab-%s.p" % language)
+        init_vocab = not path.isfile(vocab_path)
+        if not init_vocab:
             print("Loading vocabulary from cache: %s" % vocab_path)
             with open(vocab_path, "rb") as f:
                 self.vocab = pickle.load(f)
         else:
             print("Creating vocabulary for %s" % language)
-            init_vocab = True
             self.vocab = Vocab(
                 words={"<UNK>": 0},
                 chars={"<UNK>": 0},
@@ -56,7 +55,7 @@ class PerseusDataset(torch.utils.data.Dataset):
 
         # Now that we've decided if we have a premade vocab we're parsing the dataset into tokenized data that the model can work with
         self.sentences = []
-        for sentence in pyconll.load_from_file(os.path.join(data_dir, self.dataset_fn)):
+        for sentence in pyconll.load_from_file(path.join(data_dir, self.dataset_fn)):
             tokenized_sentence = []
             for token in sentence:
                 word, characters, tags = token.form, list(token.form), token.xpos
