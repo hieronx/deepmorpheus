@@ -57,14 +57,12 @@ class PerseusDataset(torch.utils.data.Dataset):
 
         # Now that we've decided if we have a premade vocab we're parsing the dataset into tokenized data that the model can work with
         self.sentences = []
-        input_body = pyconll.load_from_file(os.path.join(data_dir, self.dataset_fn))
-        for sentence in input_body:
+        for sentence in pyconll.load_from_file(os.path.join(data_dir, self.dataset_fn)):
             tokenized_sentence = []
             for token in sentence:
-                word = token.form
-                characters = list(word)
-                tags = list(token.xpos)
+                word, characters, tags = token.form, list(token.form), token.xpos
                 assert len(tags) == 9, "Tags should always have a length of 9"
+
                 tokenized_sentence.append(PerseusDataset.get_ids(self.vocab, word, characters, tags, expand_vocab=init_vocab))
 
             self.sentences.append(tokenized_sentence)
