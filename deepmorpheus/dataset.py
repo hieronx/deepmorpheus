@@ -90,43 +90,26 @@ class PerseusDataset(torch.utils.data.Dataset):
         """This function assigns ids to words, characters and tags if we are expanding the provided vocab,
         otherwise it just does a lookup in the provided vocab and returns an unknown token (0)"""
 
-        # Check if the word already exists in the vocab
-        if word not in vocab.words:
-            # Check if we're can add unknown words, if not, return UKNOWN, otherwise add it
-            if expand_vocab:
-                vocab.words[word] = len(vocab.words)
-                word_id = vocab.words[word]
-            else:
-                word_id = vocab.words["<UNK>"]
-        else:
-            word_id = vocab.words[word]
+        # Check if we can expand, if so do it
+        if word not in vocab.words and expand_vocab: vocab.words[word] = len(vocab.words)
+        # Try to find the word id in the vocab list, else add UNK 
+        word_id = vocab.words[word if word in vocab.words else "<UNK>"]
 
         character_ids = []
         # Check if the characters already exists in the vocab
         for character in characters:
-            # Check if we're expanding, if not, return UNKOWN, otherwise add it and return its id
-            if character not in vocab.chars: 
-                if expand_vocab:
-                    vocab.chars[character] = len(vocab.chars)
-                    character_ids.append(vocab.chars[character])
-                else:
-                    character_ids.append(vocab.chars["<UNK>"])
-            else:
-                character_ids.append(vocab.chars[character])
+            # If we can expand, add an unknown character
+            if character not in vocab.chars and expand_vocab: vocab.chars[character] = len(vocab.chars)
+            # If we could expand or not, try to find the character, on a miss add UNK to the character id list
+            character_ids.append(vocab.chars[character if character in vocab.chars else "<UNK>"])
 
         tag_ids = []
         # For each of the possible tags for this word
         for idx, tag in enumerate(tags):
-            # Check if the tag is already in vocab
-            if tag not in vocab.tags[idx]: 
-                # If we're expanding, add it to vocab, otherwise return an UKNOWN
-                if expand_vocab:
-                    vocab.tags[idx][tag] = len(vocab.tags[idx])
-                    tag_ids.append(vocab.tags[idx][tag])
-                else:
-                    tag_ids.append(vocab.tags[idx]["<UNK>"])
-            else:
-                tag_ids.append(vocab.tags[idx][tag])
+            # If we're expanding, add an unknown tag
+            if tag not in vocab.tags[idx] and expand_vocab: vocab.tags[idx][tag] = len(vocab.tags[idx])
+            # Try to find the char in vocab, if not found add UNK tag
+            tag_ids.append(vocab.tags[idx][tag if tag in vocab.tags[idx] else "<UNK>"])
 
         # Now we have one word (one data entry) ready for traing on the model
         return word_id, character_ids, tag_ids
