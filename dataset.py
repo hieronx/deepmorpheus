@@ -12,6 +12,7 @@ class Vocab:
     words: Dict[str, int]
     chars: Dict[str, int]
     tags: List[Dict[str, int]]
+    inverted_tags: List[Dict[int, str]] = None
 
 class PerseusDataset(torch.utils.data.Dataset):
     """This holds all the convenience methods for a dataset, such as loading as well as 
@@ -19,13 +20,13 @@ class PerseusDataset(torch.utils.data.Dataset):
 
     dataset_fn = None
     vocab_fn = "vocab.p"
-    sentences = []
     number_of_tag_categories = 9
 
     def __init__(self, data_dir):
         """"Initializes the dataset from the provided input data url"""
         assert self.dataset_fn is not None, "You need to use the subclasses of PerseusDataset"
 
+        self.sentences = []
         init_vocab = False
         vocab_path = os.path.join(data_dir, self.vocab_fn)
         if os.path.isfile(vocab_path):
@@ -49,11 +50,13 @@ class PerseusDataset(torch.utils.data.Dataset):
                 characters = list(word)
                 tags = list(token.xpos)
                 assert len(tags) == 9
-                tokenized_sentence.append(self.get_ids_and_create_vocab(word, characters, tags) if init_vocab else self.get_ids(word, characters, tags))
+                tokenized_sentence.append(self.get_ids_and_create_vocab(word, characters, tags) if init_vocab else PerseusDataset.get_ids(self.vocab, word, characters, tags))
 
             self.sentences.append(tokenized_sentence)
 
         if init_vocab:
+            self.vocab.inverted_tags = [{v: k for k, v in tag.items()} for tag in self.vocab.tags]
+
             with open(vocab_path, "wb") as vocab_file:
                 pickle.dump(self.vocab, vocab_file, protocol=pickle.HIGHEST_PROTOCOL)
                 print("Saved vocabulary to cache: %s" % vocab_path)
@@ -91,19 +94,20 @@ class PerseusDataset(torch.utils.data.Dataset):
 
         return word_id, character_ids, tag_ids
 
-    def get_ids(self, word, characters, tags):
-        if word in self.vocab.words: word_id = self.vocab.words[word]
-        else: word_id = self.vocab.words["<UNK>"]
+    @staticmethod
+    def get_ids(vocab, word, characters, tags):
+        if word in vocab.words: word_id = vocab.words[word]
+        else: word_id = vocab.words["<UNK>"]
 
         character_ids = []
         for character in characters:
-            if character in self.vocab.chars: character_ids.append(self.vocab.chars[character])
-            else: character_ids.append(self.vocab.chars["<UNK>"])
+            if character in vocab.chars: character_ids.append(vocab.chars[character])
+            else: character_ids.append(vocab.chars["<UNK>"])
 
         tag_ids = []
         for idx, tag in enumerate(tags):
-            if tag in self.vocab.tags[idx]: tag_ids.append(self.vocab.tags[idx][tag])
-            else: tag_ids.append(self.vocab.tags[idx]["<UNK>"])
+            if tag in vocab.tags[idx]: tag_ids.append(vocab.tags[idx][tag])
+            else: tag_ids.append(vocab.tags[idx]["<UNK>"])
 
         return word_id, character_ids, tag_ids
 

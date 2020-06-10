@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     train_data = PerseusTrainingDataset(hparams.data_dir)
     val_data = PerseusValidationDataset(hparams.data_dir)
-    model = LSTMCharTagger(hparams, train_data, val_data)
+    model = LSTMCharTagger(hparams, train_data.vocab, train_data, val_data)
 
     pl.seed_everything(1)
     trainer = pl.Trainer.from_argparse_args(
