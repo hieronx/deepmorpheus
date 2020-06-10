@@ -1,15 +1,13 @@
+from multiprocessing import cpu_count
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from multiprocessing import cpu_count
 
 from deepmorpheus.util import add_element_wise
-
-# This is just a lookup table to make it easier for us puny humans to understand what the tagger is tagging
-TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
 
 
 class LSTMCharTagger(pl.LightningModule):
@@ -48,13 +46,14 @@ class LSTMCharTagger(pl.LightningModule):
             )
             self.init_char_hidden()
 
-        tag_fc = []
+        tag_fc = {}
         for idx in range(len(self.vocab.tags) if not self.single_output else 1):
             num_tag_outputs = len(self.vocab.tags[idx])
             fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, num_tag_outputs)
-            tag_fc.append(fc)
+            tag_fc[self.vocab.tag_names[idx]] = fc
+        
+        self.tag_fc = nn.ModuleDict(tag_fc)
 
-        self.tag_fc = nn.ModuleList(tag_fc)
 
     def init_word_hidden(self):
         """Initialise word LSTM hidden state."""
@@ -110,8 +109,8 @@ class LSTMCharTagger(pl.LightningModule):
 
         all_word_scores = [[] for _ in range(len(sentence))]
 
-        for idx in range(len(self.tag_fc)):
-            hidden_output = self.tag_fc[idx](sentence_repr)
+        for tag_name in self.vocab.tag_names:
+            hidden_output = self.tag_fc[tag_name](sentence_repr)
             tag_scores = F.log_softmax(hidden_output, dim=1)
             
             for word_idx, word_scores in enumerate(tag_scores):
@@ -147,9 +146,9 @@ class LSTMCharTagger(pl.LightningModule):
 
         log = {'val_loss': avg_loss, 'val_acc': avg_acc}
 
-        for i in range(len(self.tag_fc)):
-            avg_tag_acc = torch.stack([x['acc_by_tag'][i] for x in outputs]).mean()
-            log['tag_acc_%s' % TAG_ID_TO_NAME[i]] = avg_tag_acc
+        for idx, tag_name in enumerate(self.vocab.tag_names):
+            avg_tag_acc = torch.stack([x['acc_by_tag'][idx] for x in outputs]).mean()
+            log['tag_acc_%s' % tag_name] = avg_tag_acc
 
         return {'avg_val_loss': avg_loss, 'log': log}
 

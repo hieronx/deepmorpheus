@@ -1,6 +1,6 @@
 import os
 import pickle
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List
 
 import pyconll
@@ -15,6 +15,7 @@ class Vocab:
     chars: Dict[str, int]
     tags: List[Dict[str, int]]
     inverted_tags: List[Dict[int, str]] = None
+    tag_names: List[str] = field(default_factory=lambda: ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]) # This is just a lookup table to make it easier for us puny humans to understand what the tagger is tagging
 
 class PerseusDataset(torch.utils.data.Dataset):
     """This holds all the convenience methods for a dataset, such as loading as well as 
