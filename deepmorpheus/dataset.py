@@ -33,7 +33,7 @@ class PerseusDataset(torch.utils.data.Dataset):
     # The location where we want to save the vocabulary pickle
     vocab_fn = "vocab.p"
     # The number of tag categories, this SHOULD never change
-    number_of_tag_categories = 9
+    NUM_TAGS = 9
 
     def __init__(self, data_dir):
         """"Initializes the dataset from the provided input data url"""
@@ -52,7 +52,7 @@ class PerseusDataset(torch.utils.data.Dataset):
             self.vocab = Vocab(
                 words={"<UNK>": 0},
                 chars={"<UNK>": 0},
-                tags=[{"<UNK>": 0} for _ in range(self.number_of_tag_categories)]
+                tags=[{"<UNK>": 0} for _ in range(self.NUM_TAGS)]
             )
 
         # Now that we've decided if we have a premade vocab we're parsing the dataset into tokenized data that the model can work with
