@@ -7,21 +7,10 @@ import torch
 from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
 
-<<<<<<< HEAD
 def attempt_vocab_load(vocab_path):
     """This function will try to load the vocab file from data/vocab.p.
     If it fails it will abort execution since we need a vocabulary to correctly
     tokenize the input data"""
-=======
-if __name__ == '__main__':
-    parser = ArgumentParser(prog="deepmorpheus", description="Morphological tagger for Ancient Greek using deep learning")
-    parser.add_argument('--data-dir', type=str, default="data")
-    parser.add_argument('--ckpt-name', type=str, default="inference.ckpt")
-    parser.add_argument('--input-file', type=str, default="test_input.txt")
-    args = parser.parse_args()
-
-    vocab_path = os.path.join(args.data_dir, PerseusDataset.vocab_fn)
->>>>>>> d2712e08850d4f6605050ba17b52aa03c0be4f66
     if not os.path.isfile(vocab_path):
         print("Vocabulary needs to be located here: %s" % vocab_path)
         exit()
