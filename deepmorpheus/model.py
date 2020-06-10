@@ -71,6 +71,7 @@ class LSTMCharTagger(pl.LightningModule):
         )
 
     def forward(self, sentence):
+        """The main forward function, this does the actual heavy lifting"""
         words = torch.tensor([word for word, _, _ in sentence]).to(self.device)
 
         word_embeddings = self.word_embeddings(words)
@@ -121,6 +122,7 @@ class LSTMCharTagger(pl.LightningModule):
         return all_word_scores
 
     def training_step(self, sentence, batch_idx):
+        """Predicts the output of the provided input for the model and calculates loss over it"""
         self.init_word_hidden()
         outputs = self.forward(sentence)
         # Shape: (sentence_len, 9, num_tag_output)
@@ -131,6 +133,7 @@ class LSTMCharTagger(pl.LightningModule):
         return {'loss': loss, 'log': logs}
 
     def validation_step(self, sentence, batch_idx):
+        """Handles one single validation step, computes its loss and updates accuracy"""
         self.init_word_hidden()
         outputs = self.forward(sentence)
         # Shape: (sentence_len, 9, num_tag_output)
@@ -141,6 +144,7 @@ class LSTMCharTagger(pl.LightningModule):
         return {'val_loss': loss, 'val_acc': avg_acc, 'acc_by_tag': acc_by_tag}
 
     def validation_epoch_end(self, outputs):
+        """Called when an validation epoch ends, this prints out the average loss and accuracy"""
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         avg_acc = torch.stack([x['val_acc'] for x in outputs]).mean()
         print('Validation loss is %.2f, validation accuracy is %.2f%%' % (avg_loss, avg_acc * 100))
@@ -154,6 +158,7 @@ class LSTMCharTagger(pl.LightningModule):
         return {'avg_val_loss': avg_loss, 'log': log}
 
     def nll_loss(self, sentence, outputs):
+        """Calculates NLL loss over the combination of the predicted output and the ground truth"""
         loss_all_words = 0.0
         for word_idx in range(len(sentence)):
             output = outputs[word_idx]
