@@ -30,24 +30,22 @@ class PerseusDataset(torch.utils.data.Dataset):
 
     # Needs to be overriden by the subclass to point to the data file
     dataset_fn = None
-    # The location where we want to save the vocabulary pickle
-    vocab_fn = "vocab.p"
     # The number of tag categories, this SHOULD never change
     NUM_TAGS = 9
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, language):
         """"Initializes the dataset from the provided input data url"""
         assert self.dataset_fn is not None, "You need to use the subclasses of PerseusDataset"
 
         # First we try to load the vocab pickle, if it doesn't exist yet we must create it
         init_vocab = False
-        vocab_path = os.path.join(data_dir, self.vocab_fn)
+        vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
         if os.path.isfile(vocab_path):
             print("Loading vocabulary from cache: %s" % vocab_path)
             with open(vocab_path, "rb") as f:
                 self.vocab = pickle.load(f)
         else:
-            print("Creating vocabulary")
+            print("Creating vocabulary for %s" % language)
             init_vocab = True
             self.vocab = Vocab(
                 words={"<UNK>": 0},
@@ -80,7 +78,7 @@ class PerseusDataset(torch.utils.data.Dataset):
 
 
     def __len__(self):
-        """Returns the length of the amount of sentences in this dataset"""
+        """Returns the number of sentences in this dataset"""
         return len(self.sentences)
 
     def __getitem__(self, index):
@@ -133,10 +131,14 @@ class PerseusDataset(torch.utils.data.Dataset):
         # Now we have one word (one data entry) ready for traing on the model
         return word_id, character_ids, tag_ids
 
-class PerseusTrainingDataset(PerseusDataset):
-    """Trivial subclass used to set the dataloading path for this dataset"""
+class AncientGreekTrainDataset(PerseusDataset):
     dataset_fn = "grc_perseus-ud-train.conllu"
 
-class PerseusValidationDataset(PerseusDataset):
-    """Trivial subclass used to set the dataloading path for this dataset"""
+class AncientGreekValDataset(PerseusDataset):
     dataset_fn = "grc_perseus-ud-dev.conllu"
+
+class LatinTrainDataset(PerseusDataset):
+    dataset_fn = "la_perseus-ud-train.conllu"
+
+class LatinTestDataset(PerseusDataset):
+    dataset_fn = "la_perseus-ud-test.conllu"

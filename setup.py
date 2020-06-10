@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="deepmorpheus", # Replace with your own username
     version="0.0.1",
-    author="Mees Gelein, Jeroen offerijns",
+    author="Mees Gelein, Jeroen Offerijns",
     author_email="author@example.com",
     description="Morphological tagger for Ancient Greek using deep learning",
     long_description=long_description,

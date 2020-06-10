@@ -4,13 +4,14 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
-from deepmorpheus.dataset import PerseusTrainingDataset, PerseusValidationDataset
+from deepmorpheus.dataset import AncientGreekTrainDataset, AncientGreekValDataset, LatinTestDataset, LatinTrainDataset
 from deepmorpheus.model import LSTMCharTagger
 from deepmorpheus.util import download_from_url
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data-dir', type=str, default="data")
+    parser.add_argument('--language', choices=['ancient-greek', 'latin'], default="ancient-greek")
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--learning-rate', type=float, default=4e-3) # Calculated by the LR finder
     parser.add_argument('--word-embedding-dim', type=int, default=100)
@@ -26,12 +27,21 @@ if __name__ == '__main__':
     parser = pl.Trainer.add_argparse_args(parser)
     hparams = parser.parse_args()
 
-    for dataset in ["train", "dev"]:
-        if not os.path.isfile("%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset)):
-            download_from_url("https://raw.githubusercontent.com/UniversalDependencies/UD_Ancient_Greek-Perseus/master/grc_perseus-ud-%s.conllu" % dataset, "%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset))
+    if hparams.language == 'ancient-greek':
+        for dataset in ["train", "dev"]:
+            if not os.path.isfile("%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset)):
+                download_from_url("https://raw.githubusercontent.com/UniversalDependencies/UD_Ancient_Greek-Perseus/master/grc_perseus-ud-%s.conllu" % dataset, "%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset))
 
-    train_data = PerseusTrainingDataset(hparams.data_dir)
-    val_data = PerseusValidationDataset(hparams.data_dir)
+        train_data = AncientGreekTrainDataset(hparams.data_dir, hparams.language)
+        val_data = AncientGreekValDataset(hparams.data_dir, hparams.language)
+    elif hparams.language == 'latin':
+        for dataset in ["train", "test"]:
+            if not os.path.isfile("%s/la_perseus-ud-%s.conllu" % (hparams.data_dir, dataset)):
+                download_from_url("https://raw.githubusercontent.com/UniversalDependencies/UD_Latin-Perseus/master/la_perseus-ud-%s.conllu" % dataset, "%s/la_perseus-ud-%s.conllu" % (hparams.data_dir, dataset))
+
+        train_data = LatinTrainDataset(hparams.data_dir, hparams.language)
+        val_data = LatinTestDataset(hparams.data_dir, hparams.language)
+    
     model = LSTMCharTagger(hparams, train_data.vocab, train_data, val_data)
 
     pl.seed_everything(1)
@@ -42,7 +52,7 @@ if __name__ == '__main__':
     )
     trainer.fit(model)
 
-    training_ckpt_path = "%s/%s.ckpt" % (hparams.data_dir, time.strftime("%Y%m%d-%H%M%S"))
+    training_ckpt_path = "%s/%s-%s.ckpt" % (hparams.data_dir, hparams.language, time.strftime("%Y%m%d-%H%M%S"))
     trainer.checkpoint_callback = None
     trainer.save_checkpoint(training_ckpt_path)
     print("Saved checkpoint to %s" % training_ckpt_path)
