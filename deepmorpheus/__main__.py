@@ -8,7 +8,7 @@ from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
+    parser = ArgumentParser(prog="deepmorpheus", description="Morphological tagger for Ancient Greek using deep learning")
     parser.add_argument('--data-dir', type=str, default="data")
     parser.add_argument('--ckpt-name', type=str, default="inference.ckpt")
     parser.add_argument('--input-file', type=str, default="test_input.txt")

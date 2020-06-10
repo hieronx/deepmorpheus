@@ -19,22 +19,21 @@ class PerseusDataset(torch.utils.data.Dataset):
     implementing methods to make it usable with a dataloader"""
 
     dataset_fn = None
-    vocab_fn = "vocab.p"
     number_of_tag_categories = 9
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, language):
         """"Initializes the dataset from the provided input data url"""
         assert self.dataset_fn is not None, "You need to use the subclasses of PerseusDataset"
 
         self.sentences = []
         init_vocab = False
-        vocab_path = os.path.join(data_dir, self.vocab_fn)
+        vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
         if os.path.isfile(vocab_path):
             print("Loading vocabulary from cache: %s" % vocab_path)
             with open(vocab_path, "rb") as f:
                 self.vocab = pickle.load(f)
         else:
-            print("Creating vocabulary")
+            print("Creating vocabulary for %s" % language)
             init_vocab = True
             self.vocab = Vocab(
                 words={"<UNK>": 0},
@@ -71,7 +70,7 @@ class PerseusDataset(torch.utils.data.Dataset):
         """
 
     def __len__(self):
-        """Returns the length of the amount of sentences in this dataset"""
+        """Returns the number of sentences in this dataset"""
         return len(self.sentences)
 
     def __getitem__(self, index):
@@ -111,8 +110,14 @@ class PerseusDataset(torch.utils.data.Dataset):
 
         return word_id, character_ids, tag_ids
 
-class PerseusTrainingDataset(PerseusDataset):
+class AncientGreekTrainDataset(PerseusDataset):
     dataset_fn = "grc_perseus-ud-train.conllu"
 
-class PerseusValidationDataset(PerseusDataset):
+class AncientGreekValDataset(PerseusDataset):
     dataset_fn = "grc_perseus-ud-dev.conllu"
+
+class LatinTrainDataset(PerseusDataset):
+    dataset_fn = "la_perseus-ud-train.conllu"
+
+class LatinTestDataset(PerseusDataset):
+    dataset_fn = "la_perseus-ud-test.conllu"
