@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
-from dataset import PerseusDataset
+from dataset import PerseusTrainingDataset, PerseusValidationDataset
 from model import LSTMCharTagger
 from util import download_from_url
 
@@ -30,8 +30,8 @@ if __name__ == '__main__':
         if not os.path.isfile("%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset)):
             download_from_url("https://raw.githubusercontent.com/UniversalDependencies/UD_Ancient_Greek-Perseus/master/grc_perseus-ud-%s.conllu" % dataset, "%s/grc_perseus-ud-%s.conllu" % (hparams.data_dir, dataset))
 
-    train_data = PerseusDataset(hparams.data_dir + "/grc_perseus-ud-train.conllu")
-    val_data = PerseusDataset(hparams.data_dir + "/grc_perseus-ud-dev.conllu", False, train_data.word_ids, train_data.character_ids, train_data.tag_ids)
+    train_data = PerseusTrainingDataset(hparams.data_dir)
+    val_data = PerseusValidationDataset(hparams.data_dir)
     model = LSTMCharTagger(hparams, train_data, val_data)
 
     pl.seed_everything(1)

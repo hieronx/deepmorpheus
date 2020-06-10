@@ -23,7 +23,7 @@ class LSTMCharTagger(pl.LightningModule):
         self.directions = 1 if self.hparams.disable_bidirectional else 2
         self.hparams.num_lstm_layers = 2
 
-        self.word_embeddings = nn.Embedding(len(self.train_data.word_ids), self.hparams.word_embedding_dim)
+        self.word_embeddings = nn.Embedding(len(self.train_data.vocab.words), self.hparams.word_embedding_dim)
         self.word_lstm_input_dim = self.hparams.word_embedding_dim if hparams.disable_char_level else self.hparams.word_embedding_dim + self.hparams.char_lstm_hidden_dim * self.directions
         self.word_lstm = nn.LSTM(
             self.word_lstm_input_dim,
@@ -35,7 +35,7 @@ class LSTMCharTagger(pl.LightningModule):
         self.init_word_hidden()
 
         if not hparams.disable_char_level:
-            self.char_embeddings = nn.Embedding(len(self.train_data.character_ids), self.hparams.char_embedding_dim)
+            self.char_embeddings = nn.Embedding(len(self.train_data.vocab.chars), self.hparams.char_embedding_dim)
             self.char_lstm = nn.LSTM(
                 self.hparams.char_embedding_dim,
                 self.hparams.char_lstm_hidden_dim,
@@ -46,8 +46,8 @@ class LSTMCharTagger(pl.LightningModule):
             self.init_char_hidden()
 
         tag_fc = []
-        for idx in range(len(self.train_data.tag_ids) if not self.single_output else 1):
-            num_tag_outputs = len(self.train_data.tag_ids[idx])
+        for idx in range(len(self.train_data.vocab.tags) if not self.single_output else 1):
+            num_tag_outputs = len(self.train_data.vocab.tags[idx])
             fc = nn.Linear(self.hparams.word_lstm_hidden_dim * self.directions, num_tag_outputs)
             tag_fc.append(fc)
 
