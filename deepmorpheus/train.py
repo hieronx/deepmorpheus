@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 
 import pytorch_lightning as pl
 
-from dataset import PerseusTrainingDataset, PerseusValidationDataset
-from model import LSTMCharTagger
-from util import download_from_url
+from deepmorpheus.dataset import PerseusTrainingDataset, PerseusValidationDataset
+from deepmorpheus.model import LSTMCharTagger
+from deepmorpheus.util import download_from_url
 
 if __name__ == '__main__':
     parser = ArgumentParser()

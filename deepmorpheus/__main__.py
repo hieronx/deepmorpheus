@@ -4,8 +4,8 @@ from argparse import ArgumentParser, Namespace
 
 import torch
 
-from dataset import PerseusDataset
-from model import LSTMCharTagger
+from deepmorpheus.dataset import PerseusDataset
+from deepmorpheus.model import LSTMCharTagger
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -60,6 +60,8 @@ if __name__ == '__main__':
     for sentence_idx, sentence in enumerate(sentences):
         model.init_word_hidden()
         output = model(sentence)
+        print()
+
         for word_idx, word_output in enumerate(output):
             tags = []
             for tag_idx, tag_output in enumerate(word_output):
@@ -67,4 +69,3 @@ if __name__ == '__main__':
                 tags.append(vocab.inverted_tags[tag_idx][tag_output_id])
             
             print('%s\t\t%s' % (words_per_sentence[sentence_idx][word_idx], "".join(tags)))
-        print()
