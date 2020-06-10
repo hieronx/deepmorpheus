@@ -9,6 +9,8 @@ import torch.utils.data
 
 @dataclass
 class Vocab:
+    """This data holder class will hold the tokenized training data, this is necessary
+    to tokenize input during inference"""
     words: Dict[str, int]
     chars: Dict[str, int]
     tags: List[Dict[str, int]]
@@ -16,16 +18,26 @@ class Vocab:
 
 class PerseusDataset(torch.utils.data.Dataset):
     """This holds all the convenience methods for a dataset, such as loading as well as 
-    implementing methods to make it usable with a dataloader"""
+    implementing methods to make it usable with a dataloader
+    
+    The dataformat we use in this dataloader is as follows: 
+        self.sentences = [
+            [(word, char[], tags[]), (word, char[], tags[]), ...],
+            [(word, char[], tags[]), (word, char[], tags[]), ...],
+            ...
+        ]
+    """
 
+    # Needs to be overriden by the subclass to point to the data file
     dataset_fn = None
-    number_of_tag_categories = 9
+    # The number of tag categories, this SHOULD never change
+    NUM_TAGS = 9
 
     def __init__(self, data_dir, language):
         """"Initializes the dataset from the provided input data url"""
         assert self.dataset_fn is not None, "You need to use the subclasses of PerseusDataset"
 
-        self.sentences = []
+        # First we try to load the vocab pickle, if it doesn't exist yet we must create it
         init_vocab = False
         vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
         if os.path.isfile(vocab_path):
@@ -38,36 +50,32 @@ class PerseusDataset(torch.utils.data.Dataset):
             self.vocab = Vocab(
                 words={"<UNK>": 0},
                 chars={"<UNK>": 0},
-                tags=[{"<UNK>": 0} for _ in range(self.number_of_tag_categories)]
+                tags=[{"<UNK>": 0} for _ in range(self.NUM_TAGS)]
             )
 
-        input_body = pyconll.load_from_file(os.path.join(data_dir, self.dataset_fn))
-        for sentence in input_body:
+        # Now that we've decided if we have a premade vocab we're parsing the dataset into tokenized data that the model can work with
+        self.sentences = []
+        for sentence in pyconll.load_from_file(os.path.join(data_dir, self.dataset_fn)):
             tokenized_sentence = []
             for token in sentence:
-                word = token.form
-                characters = list(word)
-                tags = list(token.xpos)
-                assert len(tags) == 9
-                tokenized_sentence.append(self.get_ids_and_create_vocab(word, characters, tags) if init_vocab else PerseusDataset.get_ids(self.vocab, word, characters, tags))
+                word, characters, tags = token.form, list(token.form), token.xpos
+                assert len(tags) == 9, "Tags should always have a length of 9"
+
+                tokenized_sentence.append(PerseusDataset.get_ids(self.vocab, word, characters, tags, expand_vocab=init_vocab))
 
             self.sentences.append(tokenized_sentence)
 
-        if init_vocab:
-            self.vocab.inverted_tags = [{v: k for k, v in tag.items()} for tag in self.vocab.tags]
+        # If we have just created the vocabulary, let's save it just in case
+        if init_vocab: self.save_vocab(vocab_path)
 
-            with open(vocab_path, "wb") as vocab_file:
-                pickle.dump(self.vocab, vocab_file, protocol=pickle.HIGHEST_PROTOCOL)
-                print("Saved vocabulary to cache: %s" % vocab_path)
+    def save_vocab(self, vocab_path):
+        """This function saves the vocabulary file to the disk location provided"""
+        self.vocab.inverted_tags = [{v: k for k, v in tag.items()} for tag in self.vocab.tags]
 
+        with open(vocab_path, "wb") as vocab_file:
+            pickle.dump(self.vocab, vocab_file, protocol=pickle.HIGHEST_PROTOCOL)
+            print("Saved vocabulary to cache: %s" % vocab_path)
 
-        """
-            self.sentences = [
-                [(word, char[], tags[]), (word, char[], tags[]), ...],
-                [(word, char[], tags[]), (word, char[], tags[]), ...],
-                ...
-            ]
-        """
 
     def __len__(self):
         """Returns the number of sentences in this dataset"""
@@ -77,37 +85,50 @@ class PerseusDataset(torch.utils.data.Dataset):
         """Gets the item at the provided index in this dataset"""
         return self.sentences[index]
 
-    def get_ids_and_create_vocab(self, word, characters, tags):
-        if word not in self.vocab.words: self.vocab.words[word] = len(self.vocab.words)
-        word_id = self.vocab.words[word]
-
-        character_ids = []
-        for character in characters:
-            if character not in self.vocab.chars: self.vocab.chars[character] = len(self.vocab.chars)
-            character_ids.append(self.vocab.chars[character])
-
-        tag_ids = []
-        for idx, tag in enumerate(tags):
-            if tag not in self.vocab.tags[idx]: self.vocab.tags[idx][tag] = len(self.vocab.tags[idx])
-            tag_ids.append(self.vocab.tags[idx][tag])
-
-        return word_id, character_ids, tag_ids
-
     @staticmethod
-    def get_ids(vocab, word, characters, tags):
-        if word in vocab.words: word_id = vocab.words[word]
-        else: word_id = vocab.words["<UNK>"]
+    def get_ids(vocab, word, characters, tags, expand_vocab = False):
+        """This function assigns ids to words, characters and tags if we are expanding the provided vocab,
+        otherwise it just does a lookup in the provided vocab and returns an unknown token (0)"""
+
+        # Check if the word already exists in the vocab
+        if word not in vocab.words:
+            # Check if we're can add unknown words, if not, return UKNOWN, otherwise add it
+            if expand_vocab:
+                vocab.words[word] = len(vocab.words)
+                word_id = vocab.words[word]
+            else:
+                word_id = vocab.words["<UNK>"]
+        else:
+            word_id = vocab.words[word]
 
         character_ids = []
+        # Check if the characters already exists in the vocab
         for character in characters:
-            if character in vocab.chars: character_ids.append(vocab.chars[character])
-            else: character_ids.append(vocab.chars["<UNK>"])
+            # Check if we're expanding, if not, return UNKOWN, otherwise add it and return its id
+            if character not in vocab.chars: 
+                if expand_vocab:
+                    vocab.chars[character] = len(vocab.chars)
+                    character_ids.append(vocab.chars[character])
+                else:
+                    character_ids.append(vocab.chars["<UNK>"])
+            else:
+                character_ids.append(vocab.chars[character])
 
         tag_ids = []
+        # For each of the possible tags for this word
         for idx, tag in enumerate(tags):
-            if tag in vocab.tags[idx]: tag_ids.append(vocab.tags[idx][tag])
-            else: tag_ids.append(vocab.tags[idx]["<UNK>"])
+            # Check if the tag is already in vocab
+            if tag not in vocab.tags[idx]: 
+                # If we're expanding, add it to vocab, otherwise return an UKNOWN
+                if expand_vocab:
+                    vocab.tags[idx][tag] = len(vocab.tags[idx])
+                    tag_ids.append(vocab.tags[idx][tag])
+                else:
+                    tag_ids.append(vocab.tags[idx]["<UNK>"])
+            else:
+                tag_ids.append(vocab.tags[idx][tag])
 
+        # Now we have one word (one data entry) ready for traing on the model
         return word_id, character_ids, tag_ids
 
 class AncientGreekTrainDataset(PerseusDataset):

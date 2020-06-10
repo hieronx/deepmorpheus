@@ -15,12 +15,12 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--learning-rate', type=float, default=4e-3) # Calculated by the LR finder
     parser.add_argument('--word-embedding-dim', type=int, default=100)
-    parser.add_argument('--word-lstm-hidden-dim', type=int, default=100)
+    parser.add_argument('--word-lstm-hidden-dim', type=int, default=200)
     parser.add_argument('--disable-char-level', action='store_true')
     parser.add_argument('--disable-bidirectional', action='store_true')
     parser.add_argument('--num-lstm-layers', type=int, default=2)
     parser.add_argument('--char-embedding-dim', type=int, default=50)
-    parser.add_argument('--char-lstm-hidden-dim', type=int, default=100)
+    parser.add_argument('--char-lstm-hidden-dim', type=int, default=200)
     parser.add_argument('--dropout', type=float, default=0.3)
     parser.add_argument('--track', action='store_true')
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     )
     trainer.fit(model)
 
-    training_ckpt_path = "%s/%s.ckpt" % (hparams.data_dir, time.strftime("%Y%m%d-%H%M%S"))
+    training_ckpt_path = "%s/%s-%s.ckpt" % (hparams.data_dir, hparams.language, time.strftime("%Y%m%d-%H%M%S"))
     trainer.checkpoint_callback = None
     trainer.save_checkpoint(training_ckpt_path)
     print("Saved checkpoint to %s" % training_ckpt_path)
