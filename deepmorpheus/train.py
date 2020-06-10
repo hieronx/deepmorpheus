@@ -40,7 +40,7 @@ if __name__ == '__main__':
                 download_from_url("https://raw.githubusercontent.com/UniversalDependencies/UD_Latin-Perseus/master/la_perseus-ud-%s.conllu" % dataset, "%s/la_perseus-ud-%s.conllu" % (hparams.data_dir, dataset))
 
         train_data = LatinTrainDataset(hparams.data_dir, hparams.language)
-        val_data = LatinTestDataset(hparams.data_dir, hparams.language)
+        val_data = LatinTestDataset(hparams.data_dir, hparams.language) # TODO: we should not be using the test dataset for validation
     
     model = LSTMCharTagger(hparams, train_data.vocab, train_data, val_data)
 
