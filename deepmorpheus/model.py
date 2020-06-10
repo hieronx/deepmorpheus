@@ -4,9 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from multiprocessing import cpu_count
 
 from deepmorpheus.util import add_element_wise
 
+# This is just a lookup table to make it easier for us puny humans to understand what the tagger is tagging
 TAG_ID_TO_NAME = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
 
 
@@ -168,6 +170,7 @@ class LSTMCharTagger(pl.LightningModule):
         return loss_all_words / len(sentence)
 
     def accuracy(self, sentence, outputs):
+        """Calculates the summed/mean accuracy for this sentence as well as the accuracy by tag"""
         sum_accuracy = 0.0
         sum_acc_by_tag = [0 for i in range(len(self.tag_fc))]
         for word_idx in range(len(sentence)):
@@ -179,20 +182,22 @@ class LSTMCharTagger(pl.LightningModule):
                 sum_accuracy += sum(acc) / len(self.tag_fc) # Accuracy per word
                 sum_acc_by_tag = add_element_wise(sum_acc_by_tag, acc)
 
+            # During development this happened once or twice, should not happen anymore, but let's leave it in there
             except Exception as e:
                 print(e)
-                print('output 5: %s' % str(output[5].unsqueeze(0)))
-                print('target 5: %s' % target[5])
 
         acc_by_tag = [acc / len(sentence) for acc in sum_acc_by_tag]
 
         return sum_accuracy / len(sentence), acc_by_tag
 
     def configure_optimizers(self):
+        """Returns the correctly configured optimizers"""
         return optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     def train_dataloader(self):
-        return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=4)
+        """A shortcut to the dataloader used for training data"""
+        return DataLoader(self.train_data, batch_size=1, shuffle=True, num_workers=cpu_count())
 
     def val_dataloader(self):
-        return DataLoader(self.val_data, batch_size=1, num_workers=4)
+        """A link to a dataloader that provides training data"""
+        return DataLoader(self.val_data, batch_size=1, num_workers=cpu_count())
