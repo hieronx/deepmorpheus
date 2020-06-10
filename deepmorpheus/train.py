@@ -13,15 +13,15 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default="data")
     parser.add_argument('--language', choices=['ancient-greek', 'latin'], default="ancient-greek")
     parser.add_argument('--batch-size', type=int, default=1)
-    parser.add_argument('--learning-rate', type=float, default=4e-3) # Calculated by the LR finder
+    parser.add_argument('--learning-rate', type=float, default=1e-3) # Calculated by the LR finder
     parser.add_argument('--word-embedding-dim', type=int, default=100)
-    parser.add_argument('--word-lstm-hidden-dim', type=int, default=200)
+    parser.add_argument('--word-lstm-hidden-dim', type=int, default=500)
     parser.add_argument('--disable-char-level', action='store_true')
     parser.add_argument('--disable-bidirectional', action='store_true')
     parser.add_argument('--num-lstm-layers', type=int, default=2)
-    parser.add_argument('--char-embedding-dim', type=int, default=50)
+    parser.add_argument('--char-embedding-dim', type=int, default=20)
     parser.add_argument('--char-lstm-hidden-dim', type=int, default=200)
-    parser.add_argument('--dropout', type=float, default=0.3)
+    parser.add_argument('--dropout', type=float, default=0.25)
     parser.add_argument('--track', action='store_true')
 
     parser = pl.Trainer.add_argparse_args(parser)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     pl.seed_everything(1)
     trainer = pl.Trainer.from_argparse_args(
         hparams,
-        logger=pl.loggers.WandbLogger(project="nlp_classics", log_model=False) if hparams.track else None,
+        logger=pl.loggers.WandbLogger(project="deepmorpheus_%s" % hparams.language, log_model=False) if hparams.track else None,
         deterministic=True
     )
     trainer.fit(model)
