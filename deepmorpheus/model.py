@@ -172,8 +172,9 @@ class LSTMCharTagger(pl.LightningModule):
     def accuracy(self, sentence, outputs):
         """Calculates the summed/mean accuracy for this sentence as well as the accuracy by tag"""
         sum_accuracy = 0.0
+        sentence_len = len(sentence)
         sum_acc_by_tag = [0 for i in range(self.tag_len)]
-        for word_idx in range(len(sentence)):
+        for word_idx in range(sentence_len):
             output = outputs[word_idx]
             target = sentence[word_idx][2]
 
@@ -186,9 +187,9 @@ class LSTMCharTagger(pl.LightningModule):
             except Exception as e:
                 print(e)
 
-        acc_by_tag = [acc / len(sentence) for acc in sum_acc_by_tag]
+        acc_by_tag = [acc / sentence_len for acc in sum_acc_by_tag]
 
-        return sum_accuracy / len(sentence), acc_by_tag
+        return sum_accuracy / sentence_len, acc_by_tag
 
     def configure_optimizers(self):
         """Returns the correctly configured optimizers"""
