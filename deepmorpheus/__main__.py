@@ -6,6 +6,7 @@ import torch
 
 from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
+from deepmorpheus.util import readable_conversion_file, tag_to_readable
 
 def attempt_vocab_load(vocab_path):
     """This function will try to load the vocab file from data/vocab.p.
@@ -61,10 +62,15 @@ if __name__ == '__main__':
     parser.add_argument('--data-dir', type=str, default="data")
     parser.add_argument('--ckpt-name', type=str, default="inference.ckpt")
     parser.add_argument('--input-file', type=str, default="test_input.txt")
+    parser.add_argument('--language', choices=['ancient-greek', 'latin'], default="ancient-greek")
     args = parser.parse_args()
 
+    # Load the conversion file that will work for this language
+    conversion_path = os.path.join(args.data_dir, "tagconversion_en.csv")
+    conversion_file = readable_conversion_file(conversion_path)
+
     # Try to load vocab.p or abort
-    vocab_path = os.path.join(args.data_dir, PerseusDataset.vocab_fn)
+    vocab_path = os.path.join(args.data_dir, "vocab-%s.p" % args.language)
     vocab = attempt_vocab_load(vocab_path)
 
     # Try to load input file as list of lines, or abort

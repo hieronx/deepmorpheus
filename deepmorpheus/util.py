@@ -42,3 +42,28 @@ def download_from_url(url, dst):
     os.rename(partial_dst, dst)
 
     return file_size
+
+def tag_to_readable(tag, conversion):
+    """This functions turns a 9 character tag into a human readable morphological
+    statement"""
+    parts = []
+    for index, char in enumerate(tag):
+        if char == '-': continue
+        parts.append(conversion[index][char] if char in conversion[index] else char)
+    return " ".join(parts)
+
+def readable_conversion_file(url):
+    """Reads the provided url as a conversion file"""
+    conversion_dict = []
+    with open(url, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
+        assert len(lines) == 9, "The conversion file must have exactly 9 lines detailing the 9 conversion categories"
+
+        for line in lines:
+            category_dict = {}
+            for part in line.split(","):
+                key, value = [subpart.strip() for subpart in part.split(':')]
+                category_dict[key] = value
+            print(category_dict)
+            conversion_dict.append(category_dict)
+    return conversion_dict
