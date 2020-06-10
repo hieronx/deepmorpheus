@@ -53,6 +53,7 @@ class LSTMCharTagger(pl.LightningModule):
             tag_fc[self.vocab.tag_names[idx]] = fc
         
         self.tag_fc = nn.ModuleDict(tag_fc)
+        self.tag_len = len(self.tag_fc)
 
 
     def init_word_hidden(self):
@@ -159,7 +160,7 @@ class LSTMCharTagger(pl.LightningModule):
             target = sentence[word_idx][2]
 
             try:
-                loss_per_tag = [F.nll_loss(output[tag_idx].unsqueeze(0), target[tag_idx]) for tag_idx in range(len(self.tag_fc))]
+                loss_per_tag = [F.nll_loss(output[tag_idx].unsqueeze(0), target[tag_idx]) for tag_idx in range(self.tag_len)]
                 loss_all_words += sum(loss_per_tag)
             except Exception as e:
                 print(e)
@@ -171,14 +172,14 @@ class LSTMCharTagger(pl.LightningModule):
     def accuracy(self, sentence, outputs):
         """Calculates the summed/mean accuracy for this sentence as well as the accuracy by tag"""
         sum_accuracy = 0.0
-        sum_acc_by_tag = [0 for i in range(len(self.tag_fc))]
+        sum_acc_by_tag = [0 for i in range(self.tag_len)]
         for word_idx in range(len(sentence)):
             output = outputs[word_idx]
             target = sentence[word_idx][2]
 
             try:
-                acc = [(torch.argmax(output[i]) == target[i]).float() for i in range(len(self.tag_fc))] # Accuracy per tag per word
-                sum_accuracy += sum(acc) / len(self.tag_fc) # Accuracy per word
+                acc = [(torch.argmax(output[i]) == target[i]).float() for i in range(self.tag_len)] # Accuracy per tag per word
+                sum_accuracy += sum(acc) / self.tag_len # Accuracy per word
                 sum_acc_by_tag = add_element_wise(sum_acc_by_tag, acc)
 
             # During development this happened once or twice, should not happen anymore, but let's leave it in there
