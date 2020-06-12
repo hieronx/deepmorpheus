@@ -1,0 +1,9 @@
+v:verb, d:adverb, p:pronoun, l:determinate article, n:noun, u:punctuation, a:adjective, c:conjunction, r:apposition, i:exclamation, m:numerical, x:irregular
+1:1st, 2:2nd, 3:3rd
+p:plural, s:singular, d:dual
+p:praesens, a:aoristus, r:perfectum, i:imperfectum, f:future, l:plusquamperfectum, t:future perfect
+i:indicative, p:participle, n:infinitive, m:imperative, s:subjunctive, o:optative, g:gerundive
+a:active, p:passive, m:middle, e:medium tantum
+m:male, f:female, n:neuter
+n:nominative, a:accusative, d:dative, g:genitive, l:locative, v:vocative
+c:comparative, s:superlative
