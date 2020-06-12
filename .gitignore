@@ -12,3 +12,4 @@ nlp_classics
 checkpoints
 embeddings
 profiling.txt
+data/tagconversion_en.csv

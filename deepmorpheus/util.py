@@ -1,6 +1,8 @@
 import os
+
 import requests
 from tqdm import tqdm
+
 
 class Namespace:
     """Simple class meant to make it possible to address dict entries with dot notation
@@ -64,6 +66,5 @@ def readable_conversion_file(url):
             for part in line.split(","):
                 key, value = [subpart.strip() for subpart in part.split(':')]
                 category_dict[key] = value
-            print(category_dict)
             conversion_dict.append(category_dict)
     return conversion_dict
