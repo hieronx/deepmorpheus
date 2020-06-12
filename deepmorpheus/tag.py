@@ -6,7 +6,11 @@ import torch
 
 from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
-from deepmorpheus.util import readable_conversion_file, tag_to_readable
+
+
+def tag(input_text):
+    print("Running tag on %s" % input_text)
+
 
 def attempt_vocab_load(vocab_path):
     """This function will try to load the vocab file from data/vocab.p.
@@ -34,7 +38,7 @@ def attempt_input_load(input_path):
         lines = f.readlines()
     return lines
 
-def attempt_checkpoint_load(checkpoint_path, force_compatability=False):
+def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatability=False):
     """This function tries to load a pytorch checkpoint, if it fails it aborts the program"""
     if not os.path.isfile(checkpoint_path):
         print("Model checkpoint file does not exist: %s" % checkpoint_path)
@@ -50,6 +54,7 @@ def attempt_checkpoint_load(checkpoint_path, force_compatability=False):
         hparams.disable_bidirectional = False
         hparams.disable_char_level = False
         hparams.dropout = 0.3
+        # vocab.tag_names = ["word_type", "person", "number", "tense", "mode", "voice", "gender", "case", "degree_of_comparison"]
 
     # Creates the model and loads the state dict, then return it
     model = LSTMCharTagger(hparams, vocab)
@@ -57,24 +62,13 @@ def attempt_checkpoint_load(checkpoint_path, force_compatability=False):
     return model
 
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--data-dir', type=str, default="data")
-    parser.add_argument('--ckpt-name', type=str, default="inference.ckpt")
-    parser.add_argument('--input-file', type=str, default="test_input.txt")
-    parser.add_argument('--language', choices=['ancient-greek', 'latin'], default="ancient-greek")
-    args = parser.parse_args()
-
-    # Load the conversion file that will work for this language
-    conversion_path = os.path.join(args.data_dir, "tagconversion_en.csv")
-    conversion_file = readable_conversion_file(conversion_path)
-
+def tag_from_file(input_path, language="ancient-greek", data_dir="data", ckpt_name="inference.ckpt"):
     # Try to load vocab.p or abort
-    vocab_path = os.path.join(args.data_dir, "vocab-%s.p" % args.language)
+    vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
     vocab = attempt_vocab_load(vocab_path)
 
     # Try to load input file as list of lines, or abort
-    input_file = attempt_input_load(args.input_file)
+    input_file = attempt_input_load(input_path)
 
     # List of sentences ready to infer on, and list of words by sentence, used to translate back from index to word
     sentences = []
@@ -97,7 +91,7 @@ if __name__ == '__main__':
     print("Running on device: %s" % device)
     
     # Let's see if we can load the checkpoint
-    model = attempt_checkpoint_load(os.path.join(args.data_dir, args.ckpt_name))
+    model = attempt_checkpoint_load(os.path.join(data_dir, ckpt_name), vocab, device, True)
     
     for sentence_idx, sentence in enumerate(sentences):
         model.init_word_hidden()
