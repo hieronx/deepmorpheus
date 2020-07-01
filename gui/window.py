@@ -12,8 +12,14 @@ class Window(Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         
+        self.open_button()
         self.create_dropdown()
         self.create_menu()
+
+    def open_button(self):
+        """Creates the "open file" button"""
+        open_file_button = Button(self.master, command=self.open_file, text='Open File...')
+        open_file_button.grid(row=0, column=0)
 
     def create_dropdown(self):
         """Creates the dropdown menu that shows our language selection"""
@@ -22,9 +28,9 @@ class Window(Frame):
         self.language.set(options[0])
         self.language.trace('w', self.change_dropdown)
 
-        Label(self.master, text='Input Language: ').grid(row=0, column=0)
+        Label(self.master, text='Input Language: ').grid(row=0, column=2)
         dropdown = OptionMenu(self.master, self.language, *options)
-        dropdown.grid(row=0, column=1)
+        dropdown.grid(row=0, column=3)
 
     def change_dropdown(self, *args):
         """Called whenever the dropdown changes language"""
