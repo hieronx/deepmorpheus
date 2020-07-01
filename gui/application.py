@@ -30,7 +30,7 @@ class Application(Frame):
         self.language.trace('w', self.change_dropdown)
 
         # Now make the label and the dropdown
-        Label(self.settings_frame, text='Input Language: ').grid(row=0, column=1, sticky=N+E+S)
+        Label(self.settings_frame, text='Input Language: ').grid(row=0, column=1, sticky=NES)
         dropdown = OptionMenu(self.settings_frame, self.language, *options)
         dropdown.grid(row=0, column=2, sticky=NESW)
         
