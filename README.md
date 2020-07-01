@@ -1,18 +1,12 @@
 # Deep Morpheus
 Trying to parse Ancient Greek texts using state of the art neural network techniques.
 
+This packages requires Python 3.6+, as well as PyTorch 1.0+. To get started, install the package from PyPI:
 ```
 pip install deepmorpheus
-
-import deepmorpheus
-deepmorpheus.load(model_name)
-deepmorpheus.tag(doc)
 ```
 
-
+Then, you can tag the contents of a text file like this:
 ```
-python train.py
-python evaluate.py
-python main.py --input doc.txt
-python train_embeddings.py
+deepmorpheus.tag_from_file(filepath, "ancient-greek")
 ```

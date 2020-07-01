@@ -37,7 +37,7 @@ def attempt_input_load(input_path):
         lines = f.readlines()
     return lines
 
-def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatability=False):
+def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatibility=False):
     """This function tries to load a pytorch checkpoint, if it fails it aborts the program"""
     if not os.path.isfile(checkpoint_path):
         print("Model checkpoint file does not exist: %s" % checkpoint_path)
