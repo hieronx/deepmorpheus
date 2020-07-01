@@ -6,9 +6,10 @@ def setup():
     """Starts running the GUI application"""
     print("Starting Tkinter version: %s" % TkVersion)
     root = Tk()
-    app = Window(root)
+    root.option_add("*tearOff", False)
     root.wm_title(WINDOW_TITLE)
     root.geometry(WINDOW_SIZE)
+    app = Window(root)
     print("Initialized window, starting mainloop...")
     root.mainloop()
 
