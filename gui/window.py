@@ -16,9 +16,12 @@ class Window(Frame):
         self.master.config(menu=menu)
 
         file_menu = Menu(menu)
-        file_menu.add_command(label="Open")
+        file_menu.add_command(label="Open File...", command=self.open_file)
         file_menu.add_command(label="Exit", command=self.exit_program)
         menu.add_cascade(label="File", menu=file_menu)
+
+    def open_file(self):
+        """Opens the file dialog window letting us point to a file to be opened as input"""
 
     def exit_program(self):
         """Attempts a graceful shutdown of the Tkinter mainloop"""
