@@ -9,6 +9,7 @@ class Application(Frame):
         """Creates the new window with a reference to its master"""
         Frame.__init__(self, master)
         self.master = master
+        self.mode = INPUT
         self.input_file = StringVar(self.master)
         self.input_file.set("No file loaded...")
         self.configure_grid()
@@ -27,21 +28,25 @@ class Application(Frame):
         self.contents_frame.rowconfigure(1, weight=0)
         self.contents_frame.rowconfigure(2, weight=0)
 
-        self.input_text = Text(self.contents_frame, wrap=NONE)
-        self.input_text.grid(row = 0, column = 0, sticky=NESW)
-
         file_label = Label(self.master, textvariable = self.input_file)
         file_label.grid(row=2, column=0, columnspan=2, sticky=NESW)
 
-        yscroll = Scrollbar(self.contents_frame)
-        yscroll.grid(row=0, column=1, sticky=NESW)
-        yscroll.config(command=self.input_text.yview)
+        self.input_text = Text(self.contents_frame, wrap=NONE)
+        self.output_text = Text(self.contents_frame, wrap=NONE)
 
-        xscroll = Scrollbar(self.contents_frame, orient=HORIZONTAL)
-        xscroll.grid(row=1, column=0, sticky=NESW)
-        xscroll.config(command=self.input_text.xview)
+        self.yscroll = Scrollbar(self.contents_frame)
+        self.yscroll.grid(row=0, column=1, sticky=NESW)
 
-        self.input_text.config(yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
+        self.xscroll = Scrollbar(self.contents_frame, orient=HORIZONTAL)
+        self.xscroll.grid(row=1, column=0, sticky=NESW)
+        self.register_text_field(self.input_text)
+
+    def register_text_field(self, textfield):
+        """Registers the textfield to the scrollbars"""
+        self.yscroll.config(command=textfield.yview)
+        self.xscroll.config(command=textfield.xview)
+        textfield.config(yscrollcommand=self.yscroll.set, xscrollcommand=self.xscroll.set)
+        textfield.grid(row = 0, column = 0, sticky=NESW)
 
     def populate_buttons(self):
         """Populates the bottom frame"""
@@ -51,8 +56,27 @@ class Application(Frame):
 
         # Create the start conversion button
         start_button = Button(self.buttons_frame, text='Start Analysis')
-        start_button.grid(row=0, column=1, sticky=NESW)
+        start_button.grid(row=0, column=2, sticky=NESW, padx=4, pady=4)
 
+        # Create the toggle output buttons
+        self.toggle_button = Button(self.buttons_frame, text=self.get_toggle_text(), command=self.toggle_text_mode)
+        self.toggle_button.grid(row=0, column = 1, sticky=NESW, padx=4, pady=4)
+
+    def toggle_text_mode(self):
+        """Toggles the text mode from input to output and vice versa"""
+        self.mode = INPUT if self.mode == OUTPUT else OUTPUT
+        self.toggle_button['text'] = self.get_toggle_text()
+
+        if self.mode == INPUT:
+            self.register_text_field(self.input_text)
+            self.output_text.grid_forget()
+        else:
+            self.register_text_field(self.output_text)
+            self.input_text.grid_forget()
+
+    def get_toggle_text(self):
+        """Returns the correct output for the toggle button"""
+        return 'Textfield: Show Output' if self.mode == INPUT else 'Textfield: Show Input'
 
     def populate_settings(self):
         """Populates the settings menu"""
