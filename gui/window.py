@@ -8,8 +8,9 @@ class Window(Frame):
         """Creates the new window with a reference to its master"""
         Frame.__init__(self, master)
         self.master = master
-        self.grid(column=0, row=0, sticky='nsew')
+        self.grid(column=0, row=0, sticky='nsew', padx=8, pady=8)
         self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
         
         self.open_button()
@@ -19,7 +20,7 @@ class Window(Frame):
     def open_button(self):
         """Creates the "open file" button"""
         open_file_button = Button(self.master, command=self.open_file, text='Open File...')
-        open_file_button.grid(row=0, column=0)
+        open_file_button.grid(row=0, column=0, padx=8, pady=8)
 
     def create_dropdown(self):
         """Creates the dropdown menu that shows our language selection"""
@@ -30,7 +31,7 @@ class Window(Frame):
 
         Label(self.master, text='Input Language: ').grid(row=0, column=2)
         dropdown = OptionMenu(self.master, self.language, *options)
-        dropdown.grid(row=0, column=3)
+        dropdown.grid(row=0, column=3, padx=8, pady=8)
 
     def change_dropdown(self, *args):
         """Called whenever the dropdown changes language"""
