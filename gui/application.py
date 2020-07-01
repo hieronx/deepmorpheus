@@ -9,6 +9,8 @@ class Application(Frame):
         """Creates the new window with a reference to its master"""
         Frame.__init__(self, master)
         self.master = master
+        self.input_file = StringVar(self.master)
+        self.input_file.set("No file loaded...")
         self.configure_grid()
         self.menu = self.create_menu()
         self.settings_frame, self.contents_frame, self.buttons_frame = self.create_frames()
@@ -23,9 +25,13 @@ class Application(Frame):
         self.contents_frame.columnconfigure(1, weight=0)
         self.contents_frame.rowconfigure(0, weight=1)
         self.contents_frame.rowconfigure(1, weight=0)
+        self.contents_frame.rowconfigure(2, weight=0)
 
         self.input_text = Text(self.contents_frame, wrap=NONE)
         self.input_text.grid(row = 0, column = 0, sticky=NESW)
+
+        file_label = Label(self.master, textvariable = self.input_file)
+        file_label.grid(row=2, column=0, columnspan=2, sticky=NESW)
 
         yscroll = Scrollbar(self.contents_frame)
         yscroll.grid(row=0, column=1, sticky=NESW)
@@ -108,7 +114,20 @@ class Application(Frame):
 
     def open_file(self):
         """Opens the file dialog window letting us point to a file to be opened as input"""
-        print(filedialog.askopenfilename())
+        filename = filedialog.askopenfilename()
+        if filename is None or len(filename.strip()) == 0: return
+
+        contents = ""
+        try:
+            with open(filename, 'r', encoding='utf8') as f:
+                contents = "".join(f.readlines())
+            self.input_file.set(filename)
+        except:
+            self.input_file.set("Could not open file: %s" % filename)
+            
+        self.input_text.delete('1.0', END)
+        self.input_text.insert('1.0', contents)
+
 
     def exit_program(self):
         """Attempts a graceful shutdown of the Tkinter mainloop"""
