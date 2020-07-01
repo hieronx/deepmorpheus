@@ -1,18 +1,17 @@
 # Deep Morpheus
-Trying to parse Ancient Greek texts using state of the art neural network techniques.
+Morphological tagger for Ancient Greek and Latin using deep learning.
 
-```
+## Getting started
+Make sure you are running Python 3.6 or higher. You can install the package from PyPI:
+
+```shell
 pip install deepmorpheus
+```
 
+To tag a `.txt` file, simply run:
+
+```python
 import deepmorpheus
-deepmorpheus.load(model_name)
-deepmorpheus.tag(doc)
-```
 
-
-```
-python train.py
-python evaluate.py
-python main.py --input doc.txt
-python train_embeddings.py
+deepmorpheus.tag_from_file("input.txt", "ancient-greek")
 ```

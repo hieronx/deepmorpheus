@@ -1,15 +1,14 @@
 import os
 import pickle
 from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 import torch
 
 from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
-
-
-def tag(input_text):
-    print("Running tag on %s" % input_text)
+from deepmorpheus.util import readable_conversion_file, tag_to_readable
 
 
 def attempt_vocab_load(vocab_path):
@@ -62,7 +61,18 @@ def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatability=
     return model
 
 
-def tag_from_file(input_path, language="ancient-greek", data_dir="data", ckpt_name="inference.ckpt"):
+@dataclass
+class WordWithTags:
+    word: str
+    tags: Dict[str, str]
+    readable_tags: str
+
+    def __str__(self):
+        return "%s: %s" % (self.word, self.readable_tags)
+
+def tag_from_file(input_path, language="ancient-greek", data_dir="data"):
+    assert language == "ancient-greek" or language == "latin", "Language parameter for tag_from_file() needs to be one of: [ancient-greek, latin]"
+
     # Try to load vocab.p or abort
     vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
     vocab = attempt_vocab_load(vocab_path)
@@ -91,17 +101,27 @@ def tag_from_file(input_path, language="ancient-greek", data_dir="data", ckpt_na
     print("Running on device: %s" % device)
     
     # Let's see if we can load the checkpoint
-    model = attempt_checkpoint_load(os.path.join(data_dir, ckpt_name), vocab, device, True)
+    model = attempt_checkpoint_load(os.path.join(data_dir, language + ".ckpt"), vocab, device, True)
+
+    conversion = readable_conversion_file(os.path.join(data_dir, "tagconversion_en.csv"))
     
+    return_output = []
     for sentence_idx, sentence in enumerate(sentences):
         model.init_word_hidden()
         output = model(sentence)
-        print()
 
+        sentence_output = []
         for word_idx, word_output in enumerate(output):
-            tags = []
+            tags = {}
+            tag_str = ""
             for tag_idx, tag_output in enumerate(word_output):
                 tag_output_id = torch.argmax(tag_output).item()
-                tags.append(vocab.inverted_tags[tag_idx][tag_output_id])
-            
-            print('%s\t\t%s' % (words_per_sentence[sentence_idx][word_idx], "".join(tags)))
+                tags[vocab.tag_names[tag_idx]] = vocab.inverted_tags[tag_idx][tag_output_id]
+                tag_str += vocab.inverted_tags[tag_idx][tag_output_id]
+
+            word_with_tags = WordWithTags(words_per_sentence[sentence_idx][word_idx], tags, tag_to_readable(tag_str, conversion))
+            sentence_output.append(word_with_tags)
+        
+        return_output.append(sentence_output)
+    
+    return return_output
