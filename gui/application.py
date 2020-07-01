@@ -20,10 +20,22 @@ class Application(Frame):
     def populate_contents(self):
         """Populates the middle frame"""
         self.contents_frame.columnconfigure(0, weight=1)
+        self.contents_frame.columnconfigure(1, weight=0)
         self.contents_frame.rowconfigure(0, weight=1)
+        self.contents_frame.rowconfigure(1, weight=0)
 
-        input_text = Text(self.contents_frame)
-        input_text.grid(row = 0, column = 0, sticky=NESW)
+        self.input_text = Text(self.contents_frame, wrap=NONE)
+        self.input_text.grid(row = 0, column = 0, sticky=NESW)
+
+        yscroll = Scrollbar(self.contents_frame)
+        yscroll.grid(row=0, column=1, sticky=NESW)
+        yscroll.config(command=self.input_text.yview)
+
+        xscroll = Scrollbar(self.contents_frame, orient=HORIZONTAL)
+        xscroll.grid(row=1, column=0, sticky=NESW)
+        xscroll.config(command=self.input_text.xview)
+
+        self.input_text.config(yscrollcommand=yscroll.set, xscrollcommand=xscroll.set)
 
     def populate_buttons(self):
         """Populates the bottom frame"""
@@ -92,7 +104,6 @@ class Application(Frame):
         file_menu.add_command(label="Open File...", command=self.open_file)
         file_menu.add_command(label="Exit", command=self.exit_program)
         menu.add_cascade(label="File", menu=file_menu)
-
         return menu
 
     def open_file(self):
