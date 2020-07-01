@@ -8,12 +8,27 @@ class Window(Frame):
         """Creates the new window with a reference to its master"""
         Frame.__init__(self, master)
         self.master = master
-        self.pack(fill=BOTH, expand=True)
+        self.grid(column=0, row=0, sticky='nsew')
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        
+        self.create_dropdown()
         self.create_menu()
 
-        # Example on how to place buttons in relative positions
-        # button = Button(text='Click to Open File', command=self.open_file)
-        # button.pack(side=RIGHT, padx=5, pady=5)
+    def create_dropdown(self):
+        """Creates the dropdown menu that shows our language selection"""
+        self.language = StringVar(self.master)
+        options = ['Ancient Greek', 'Latin']
+        self.language.set(options[0])
+        self.language.trace('w', self.change_dropdown)
+
+        Label(self.master, text='Input Language: ').grid(row=0, column=0)
+        dropdown = OptionMenu(self.master, self.language, *options)
+        dropdown.grid(row=0, column=1)
+
+    def change_dropdown(self, *args):
+        """Called whenever the dropdown changes language"""
+        print(self.language.get())
 
     def create_menu(self):
         """Creates the menu on the top border of the window"""
