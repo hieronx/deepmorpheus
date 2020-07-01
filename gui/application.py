@@ -14,10 +14,33 @@ class Application(Frame):
         self.settings_frame, self.contents_frame, self.buttons_frame = self.create_frames()
 
         self.populate_settings()
+        self.populate_contents()
+        self.populate_buttons()
+
+    def populate_contents(self):
+        """Populates the middle frame"""
+        self.contents_frame.columnconfigure(0, weight=1)
+        self.contents_frame.rowconfigure(0, weight=1)
+
+        input_text = Text(self.contents_frame)
+        input_text.grid(row = 0, column = 0, sticky=NESW)
+
+    def populate_buttons(self):
+        """Populates the bottom frame"""
+        self.buttons_frame.columnconfigure(0, weight = 1)
+        self.buttons_frame.columnconfigure(1, weight = 1)
+        self.buttons_frame.columnconfigure(2, weight = 1)
+
+        # Create the start conversion button
+        start_button = Button(self.buttons_frame, text='Start Analysis')
+        start_button.grid(row=0, column=1, sticky=NESW)
+
 
     def populate_settings(self):
         """Populates the settings menu"""
-        for i in range(3): self.settings_frame.columnconfigure(i, weight = 1)
+        self.settings_frame.columnconfigure(0, weight = 1)
+        self.settings_frame.columnconfigure(1, weight = 1)
+        self.settings_frame.columnconfigure(2, weight = 1)
 
         # Create the open file button
         open_file_button = Button(self.settings_frame, command=self.open_file, text='Open File...')
@@ -37,13 +60,13 @@ class Application(Frame):
     def create_frames(self):
         """Creates the 3 frames that make up the application"""
         settings = Frame(self.master)
-        settings.grid(row=0, column=0, rowspan=1, columnspan=10, sticky=NESW)
+        settings.grid(row=0, column=0, rowspan=1, columnspan=10, sticky=NESW, padx=4, pady=4)
 
-        contents = Frame(self.master, bg='blue')
-        contents.grid(row=1, column=0, rowspan=1, columnspan=10, sticky=NESW)
+        contents = Frame(self.master)
+        contents.grid(row=1, column=0, rowspan=1, columnspan=10, sticky=NESW, padx=4, pady=4)
 
-        buttons = Frame(self.master, bg='green')
-        buttons.grid(row=2, column=0, rowspan=1, columnspan=10, sticky=NESW)
+        buttons = Frame(self.master)
+        buttons.grid(row=2, column=0, rowspan=1, columnspan=10, sticky=NESW, padx=4, pady=4)
 
         return settings, contents, buttons
 
