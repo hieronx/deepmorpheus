@@ -2,7 +2,7 @@
 Contains multiple useful utility functions, this prevents lots of code doubling
 as well as just being plain useful and not necessarily tied to a specific class
 """
-from tkinter import filedialog
+from tkinter import filedialog, END
 
 def configure_rows(tkinter_object, weights):
     """Configures multiple rows in a simple oneliner"""
@@ -26,9 +26,14 @@ def read_file_as_str(url):
 def get_input_filename():
     """Uses tkinter filedialog to get a filename for an opening file"""
     name = filedialog.askopenfilename()
-    if filename is None or len(filename.strip()) == 0: return None
+    if name is None or len(name.strip()) == 0: return None
     else: return name
 
 def text_is_empty(text):
     """Returns if the provided instance of tkinter.Text is empty"""
     return len(text.get('1.0').strip()) > 0
+
+def set_text(text, new_contents):
+    """Completely replaces the text contents from a tkinter.Text instance"""
+    text.delete('1.0', END)
+    text.insert('1.0', new_contents)

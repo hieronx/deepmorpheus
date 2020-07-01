@@ -124,10 +124,9 @@ class Application(Frame):
         contents = read_file_as_str(filename)
         if contents is None:
             self.input_file = "Could not open file: %s" % filename
+            set_text(self.input_text, 'ERROR')
         else: 
             self.input_file = filename
             self.filename.set(self.input_file)
             self.start_button['state'] = NORMAL
-            
-        self.input_text.delete('1.0', END)
-        self.input_text.insert('1.0', contents)
+            set_text(self.input_text, contents)
