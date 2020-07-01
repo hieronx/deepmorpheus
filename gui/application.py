@@ -36,23 +36,25 @@ class Application(Frame):
         
     def create_frames(self):
         """Creates the 3 frames that make up the application"""
-        settings = Frame(self.master, bg='red')
+        settings = Frame(self.master)
         settings.grid(row=0, column=0, rowspan=1, columnspan=10, sticky=NESW)
 
         contents = Frame(self.master, bg='blue')
-        contents.grid(row=1, column=0, rowspan=8, columnspan=10, sticky=NESW)
+        contents.grid(row=1, column=0, rowspan=1, columnspan=10, sticky=NESW)
 
         buttons = Frame(self.master, bg='green')
-        buttons.grid(row=9, column=0, rowspan=1, columnspan=10, sticky=NESW)
+        buttons.grid(row=2, column=0, rowspan=1, columnspan=10, sticky=NESW)
 
         return settings, contents, buttons
 
     def configure_grid(self):
         """Handles the necessary setup for the grid"""
         self.grid()
-        for num in range(10):
-            self.master.rowconfigure(num, weight=1)
-            self.master.columnconfigure(num, weight=1)
+        for col in range(10):
+            self.master.columnconfigure(col, weight=1)
+        self.master.rowconfigure(0, weight=0)
+        self.master.rowconfigure(1, weight=1)
+        self.master.rowconfigure(2, weight=0)
 
     def change_dropdown(self, *args):
         """Called whenever the dropdown changes language"""
