@@ -15,3 +15,10 @@ import deepmorpheus
 
 deepmorpheus.tag_from_file("input.txt", "ancient-greek")
 ```
+
+Or to tag a string directly, run:
+```python
+import deepmorpheus
+
+deepmorpheus.tag_from_file("τὰ γὰρ πρὸ αὐτῶν καὶ τὰ ἔτι παλαίτερα σαφῶς μὲν εὑρεῖν διὰ χρόνου πλῆθος ἀδύνατα ἦν", "ancient-greek")
+```
