@@ -4,15 +4,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="deepmorpheus", # Replace with your own username
-    version="0.1.1",
+    name="deepmorpheus",
+    version="0.1.3",
     author="Mees Gelein, Jeroen Offerijns",
     description="Morphological tagger for Ancient Greek using deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/offerijns/deepmorpheus",
     packages=["deepmorpheus"],
-    install_requires=["torch", "pyconll", "requests"],
+    install_requires=["torch==1.5.0", "pyconll==2.2.1", "requests==2.20.0"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
