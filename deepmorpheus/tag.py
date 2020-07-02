@@ -71,21 +71,24 @@ class WordWithTags:
         return "%s: %s" % (self.word, self.readable_tags)
 
 def tag_from_file(input_path, language="ancient-greek", data_dir="data"):
+    """Loads from a specified file, loads the file and then forwards to the tag_from_lines function """
+    # Try to load input file as list of lines, or abort
+    input_file = attempt_input_load(input_path)
+    return tag_from_lines(input_file, language, data_dir)
+
+def tag_from_lines(input_lines, language="ancient-greek", data_dir="data"):
     assert language == "ancient-greek" or language == "latin", "Language parameter for tag_from_file() needs to be one of: [ancient-greek, latin]"
 
     # Try to load vocab.p or abort
     vocab_path = os.path.join(data_dir, "vocab-%s.p" % language)
     vocab = attempt_vocab_load(vocab_path)
 
-    # Try to load input file as list of lines, or abort
-    input_file = attempt_input_load(input_path)
-
     # List of sentences ready to infer on, and list of words by sentence, used to translate back from index to word
     sentences = []
     words_per_sentence = []
 
     # For each of the lines in the input, make a separate sentence and split into list of words
-    for line in input_file:
+    for line in input_lines:
         sentence = []
         words = [word.strip() for word in line.split(" ")]
         # For each word in the sentence, tokenize it and its chars, we don't know the tags, so leave empty
