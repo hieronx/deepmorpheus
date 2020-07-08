@@ -1,3 +1,4 @@
 torch==1.5.0
 pyconll==2.2.1
 requests==2.23.0
+pytorch_lightning==0.8.4
