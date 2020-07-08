@@ -2,7 +2,7 @@
 Morphological tagger for Ancient Greek and Latin using deep learning.
 
 ## Installation
-Make sure you are running Python 3.6 or higher. You can install the package from PyPI:
+Make sure you are running Python 3.6 or higher, and that you have already installed PyTorch >= 1.3.0. You can install the package from PyPI:
 
 ```shell
 pip install deepmorpheus
