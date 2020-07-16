@@ -1,9 +1,0 @@
-v:verb, d:adverb, p:pronoun, l:definite article, n:noun, u:punctuation, a:adjective, c:conjunction, r:apposition, i:exclamation, m:numerical, x:irregular
-1:first person, 2:second person, 3:third person
-p:plural, s:singular, d: dual
-p:praesens, a:aoristus, r:perfectum, i:imperfectum, f:futurum, l:plusquamperfectum, t:futurum perfectum
-i:indicative, p:participle, n:infinitive, s:subjunctive, o:optative, m:imperative, g:gerund
-a:active, p:passive, m:medium, e:medium tantum
-m:masculine,f:feminine,n:neutral
-n:nominative, a:accusative, d:dative, g:genitive, v:vocative, l:locative
-c:Comparative,s:superlative
