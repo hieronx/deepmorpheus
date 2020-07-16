@@ -1,11 +1,10 @@
-import os
-import pickle
 from argparse import ArgumentParser, Namespace
 from dataclasses import dataclass, field
+import os
+import pickle
 from typing import Dict, List
 
 import torch
-
 from deepmorpheus.dataset import PerseusDataset
 from deepmorpheus.model import LSTMCharTagger
 from deepmorpheus.util import readable_conversion_file, tag_to_readable
@@ -49,7 +48,7 @@ def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatibility=
     hparams = Namespace(**checkpoint_params)
 
     # Only turn this on if we need to load an older model which had different hparams
-    if force_compatability:
+    if force_compatibility:
         hparams.disable_bidirectional = False
         hparams.disable_char_level = False
         hparams.dropout = 0.3
