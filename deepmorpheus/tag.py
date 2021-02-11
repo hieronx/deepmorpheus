@@ -57,6 +57,7 @@ def attempt_checkpoint_load(checkpoint_path, vocab, device, force_compatibility=
     # Creates the model and loads the state dict, then return it
     model = LSTMCharTagger(hparams, vocab)
     model.load_state_dict(checkpoint['state_dict'])
+    model.eval()
     return model
 
 
