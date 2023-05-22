@@ -12,7 +12,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/offerijns/deepmorpheus",
     packages=["deepmorpheus"],
-    install_requires=["pyconll==2.2.1", "requests==2.23.0", "pytorch_lightning==0.8.4"],
+    install_requires=["pyconll==2.2.1", "requests==2.31.0", "pytorch_lightning==0.8.4"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
